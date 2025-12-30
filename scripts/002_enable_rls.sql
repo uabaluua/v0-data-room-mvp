@@ -1,3 +1,41 @@
+-- Create helper functions to check ownership without triggering RLS recursion
+-- These functions use SECURITY DEFINER to bypass RLS when checking ownership
+CREATE OR REPLACE FUNCTION public.is_data_room_owner(room_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.data_rooms 
+    WHERE id = room_id AND owner_id = user_id
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_folder_owner(folder_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.folders 
+    WHERE id = folder_id AND owner_id = user_id
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_file_owner(file_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.files 
+    WHERE id = file_id AND owner_id = user_id
+  );
+$$;
+
 -- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.data_rooms ENABLE ROW LEVEL SECURITY;
@@ -202,9 +240,9 @@ CREATE POLICY "Users can view shares they created"
 CREATE POLICY "Users can view shares for their items"
   ON public.shares FOR SELECT
   USING (
-    data_room_id IN (SELECT id FROM public.data_rooms WHERE owner_id = auth.uid()) OR
-    folder_id IN (SELECT id FROM public.folders WHERE owner_id = auth.uid()) OR
-    file_id IN (SELECT id FROM public.files WHERE owner_id = auth.uid())
+    (data_room_id IS NOT NULL AND public.is_data_room_owner(data_room_id, auth.uid())) OR
+    (folder_id IS NOT NULL AND public.is_folder_owner(folder_id, auth.uid())) OR
+    (file_id IS NOT NULL AND public.is_file_owner(file_id, auth.uid()))
   );
 
 CREATE POLICY "Users can view shares for themselves"
@@ -215,9 +253,9 @@ CREATE POLICY "Users can create shares for their own items"
   ON public.shares FOR INSERT
   WITH CHECK (
     shared_by = auth.uid() AND (
-      data_room_id IN (SELECT id FROM public.data_rooms WHERE owner_id = auth.uid()) OR
-      folder_id IN (SELECT id FROM public.folders WHERE owner_id = auth.uid()) OR
-      file_id IN (SELECT id FROM public.files WHERE owner_id = auth.uid())
+      (data_room_id IS NOT NULL AND public.is_data_room_owner(data_room_id, auth.uid())) OR
+      (folder_id IS NOT NULL AND public.is_folder_owner(folder_id, auth.uid())) OR
+      (file_id IS NOT NULL AND public.is_file_owner(file_id, auth.uid()))
     )
   );
 
