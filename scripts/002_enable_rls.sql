@@ -36,6 +36,51 @@ AS $$
   );
 $$;
 
+-- Function to check if a data room is shared via token
+CREATE OR REPLACE FUNCTION public.is_data_room_shared_by_token(room_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.shares 
+    WHERE data_room_id = room_id 
+    AND share_token IS NOT NULL
+    AND (expires_at IS NULL OR expires_at > NOW())
+  );
+$$;
+
+-- Function to check if a folder is shared via token
+CREATE OR REPLACE FUNCTION public.is_folder_shared_by_token(folder_id_param UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.shares 
+    WHERE folder_id = folder_id_param 
+    AND share_token IS NOT NULL
+    AND (expires_at IS NULL OR expires_at > NOW())
+  );
+$$;
+
+-- Function to check if a file is shared via token
+CREATE OR REPLACE FUNCTION public.is_file_shared_by_token(file_id_param UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.shares 
+    WHERE file_id = file_id_param 
+    AND share_token IS NOT NULL
+    AND (expires_at IS NULL OR expires_at > NOW())
+  );
+$$;
+
 -- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.data_rooms ENABLE ROW LEVEL SECURITY;
@@ -74,8 +119,8 @@ CREATE POLICY "Users can view data rooms shared with them"
   USING (
     id IN (
       SELECT data_room_id FROM public.shares 
-      WHERE shared_with = auth.uid() OR (share_token IS NOT NULL)
-    )
+      WHERE shared_with = auth.uid()
+    ) OR public.is_data_room_shared_by_token(id)
   );
 
 CREATE POLICY "Users can insert their own data rooms"
@@ -119,7 +164,7 @@ CREATE POLICY "Users can view folders shared directly with them"
     id IN (
       SELECT folder_id FROM public.shares 
       WHERE shared_with = auth.uid()
-    )
+    ) OR public.is_folder_shared_by_token(id)
   );
 
 CREATE POLICY "Users can insert folders in their own data rooms"
@@ -190,7 +235,7 @@ CREATE POLICY "Users can view files shared directly with them"
     id IN (
       SELECT file_id FROM public.shares 
       WHERE shared_with = auth.uid()
-    )
+    ) OR public.is_file_shared_by_token(id)
   );
 
 CREATE POLICY "Users can insert files in their own data rooms"
@@ -262,3 +307,7 @@ CREATE POLICY "Users can create shares for their own items"
 CREATE POLICY "Users can delete shares they created"
   ON public.shares FOR DELETE
   USING (shared_by = auth.uid());
+
+CREATE POLICY "Anyone can view shares by token"
+  ON public.shares FOR SELECT
+  USING (share_token IS NOT NULL);

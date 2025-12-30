@@ -27,7 +27,7 @@ export interface File {
   name: string
   data_room_id: string
   folder_id: string | null
-  content: string
+  data: string
   size: number
   mime_type: string
   owner_id: string
@@ -96,9 +96,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
       const { data: dataRoomsData } = await supabase
         .from("data_rooms")
         .select("*")
-        // .order("created_at", { ascending: false })
-
-        debugger
+        .order("created_at", { ascending: false })
 
       if (dataRoomsData) {
         setDataRooms(dataRoomsData)
@@ -331,7 +329,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
           name,
           data_room_id: currentDataRoom.id,
           folder_id: folderId,
-          content,
+          data: content,
           size,
           mime_type: "application/pdf",
           owner_id: userId,
