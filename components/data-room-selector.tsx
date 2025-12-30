@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trash2, FolderOpen } from "lucide-react"
+import { Plus, Trash2, FolderOpen, MoreVertical, Pencil, Share2 } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -26,12 +26,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ShareDialog } from "@/components/share-dialog"
 
 export function DataRoomSelector() {
-  const { dataRooms, createDataRoom, deleteDataRoom, selectDataRoom } = useDataRoom()
+  const { dataRooms, createDataRoom, renameDataRoom, deleteDataRoom, selectDataRoom } = useDataRoom()
   const [newRoomName, setNewRoomName] = useState("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [editingRoom, setEditingRoom] = useState<string | null>(null)
+  const [editName, setEditName] = useState("")
   const [error, setError] = useState("")
 
   const handleCreate = async () => {
@@ -42,7 +46,6 @@ export function DataRoomSelector() {
       return
     }
 
-    // Check for duplicate names
     if (dataRooms.some((dr) => dr.name.toLowerCase() === trimmedName.toLowerCase())) {
       setError("A data room with this name already exists")
       return
@@ -58,6 +61,27 @@ export function DataRoomSelector() {
     if (deleteId) {
       await deleteDataRoom(deleteId)
       setDeleteId(null)
+    }
+  }
+
+  const handleRename = async () => {
+    const trimmedName = editName.trim()
+
+    if (!trimmedName) {
+      setError("Data room name cannot be empty")
+      return
+    }
+
+    if (dataRooms.some((dr) => dr.id !== editingRoom && dr.name.toLowerCase() === trimmedName.toLowerCase())) {
+      setError("A data room with this name already exists")
+      return
+    }
+
+    if (editingRoom) {
+      await renameDataRoom(editingRoom, trimmedName)
+      setEditingRoom(null)
+      setEditName("")
+      setError("")
     }
   }
 
@@ -145,23 +169,91 @@ export function DataRoomSelector() {
                       </CardDescription>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 -mr-2"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setDeleteId(room.id)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 -mr-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <ShareDialog itemType="data_room" itemId={room.id} itemName={room.name}>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                          }}
+                        >
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </DropdownMenuItem>
+                      </ShareDialog>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingRoom(room.id)
+                          setEditName(room.name)
+                          setError("")
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteId(room.id)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardHeader>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={!!editingRoom} onOpenChange={(open) => !open && setEditingRoom(null)}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Rename Data Room</DialogTitle>
+            <DialogDescription>Enter a new name for this data room</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Data Room Name</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => {
+                  setEditName(e.target.value)
+                  setError("")
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleRename()
+                  }
+                }}
+              />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingRoom(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRename}>Rename</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

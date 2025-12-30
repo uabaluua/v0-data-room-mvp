@@ -2,8 +2,38 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import type { DataRoom, Folder, File, StorageState } from "./storage"
-import { getData, saveData, generateId } from "./storage"
+import { createClient } from "@/lib/supabase/client"
+
+export interface DataRoom {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Folder {
+  id: string
+  name: string
+  data_room_id: string
+  parent_id: string | null
+  owner_id: string
+  created_at: string
+  updated_at: string
+}
+
+export interface File {
+  id: string
+  name: string
+  data_room_id: string
+  folder_id: string | null
+  content: string
+  size: number
+  mime_type: string
+  owner_id: string
+  created_at: string
+  updated_at: string
+}
 
 interface DataRoomContextType {
   // State
@@ -15,6 +45,7 @@ interface DataRoomContextType {
 
   // Data Room operations
   createDataRoom: (name: string) => Promise<void>
+  renameDataRoom: (id: string, newName: string) => Promise<void>
   deleteDataRoom: (id: string) => Promise<void>
   selectDataRoom: (dataRoom: DataRoom | null) => void
 
@@ -26,7 +57,7 @@ interface DataRoomContextType {
   getFolderPath: (folderId: string | null) => Folder[]
 
   // File operations
-  uploadFile: (name: string, content: string, folderId: string, size: number) => Promise<void>
+  uploadFile: (name: string, content: string, folderId: string | null, size: number) => Promise<void>
   renameFile: (id: string, newName: string) => Promise<void>
   deleteFile: (id: string) => Promise<void>
 
@@ -43,66 +74,152 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
   const [currentDataRoom, setCurrentDataRoom] = useState<DataRoom | null>(null)
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
 
-  // Load data from IndexedDB on mount
   useEffect(() => {
     async function loadData() {
-      const data = await getData()
-      setDataRooms(data.dataRooms)
-      setFolders(data.folders)
-      setFiles(data.files)
+      const supabase = createClient()
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
+
+      setUserId(user.id)
+
+      // Load data rooms
+      const { data: dataRoomsData } = await supabase
+        .from("data_rooms")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (dataRoomsData) {
+        setDataRooms(dataRoomsData)
+      }
+
       setIsLoading(false)
     }
     loadData()
   }, [])
 
-  // Save data to IndexedDB whenever it changes
-  const saveState = useCallback(
-    async (state: Partial<StorageState>) => {
-      const fullState: StorageState = {
-        dataRooms: state.dataRooms || dataRooms,
-        folders: state.folders || folders,
-        files: state.files || files,
+  useEffect(() => {
+    async function loadFolders() {
+      if (!currentDataRoom) {
+        setFolders([])
+        return
       }
-      await saveData(fullState)
-    },
-    [dataRooms, folders, files],
-  )
+
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("folders")
+        .select("*")
+        .eq("data_room_id", currentDataRoom.id)
+        .order("created_at", { ascending: true })
+
+      if (data) {
+        setFolders(data)
+      }
+    }
+    loadFolders()
+  }, [currentDataRoom])
+
+  useEffect(() => {
+    async function loadFiles() {
+      if (!currentDataRoom) {
+        setFiles([])
+        return
+      }
+
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("files")
+        .select("*")
+        .eq("data_room_id", currentDataRoom.id)
+        .order("created_at", { ascending: true })
+
+      if (data) {
+        setFiles(data)
+      }
+    }
+    loadFiles()
+  }, [currentDataRoom, currentFolder])
 
   // Data Room operations
   const createDataRoom = useCallback(
     async (name: string) => {
-      const newDataRoom: DataRoom = {
-        id: generateId(),
-        name,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+      if (!userId) return
+
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("data_rooms")
+        .insert({
+          name,
+          owner_id: userId,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error creating data room:", error)
+        throw error
       }
-      const updated = [...dataRooms, newDataRoom]
-      setDataRooms(updated)
-      await saveState({ dataRooms: updated })
+
+      if (data) {
+        setDataRooms((prev) => [...prev, data])
+      }
     },
-    [dataRooms, saveState],
+    [userId],
+  )
+
+  const renameDataRoom = useCallback(
+    async (id: string, newName: string) => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("data_rooms")
+        .update({ name: newName, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error renaming data room:", error)
+        throw error
+      }
+
+      if (data) {
+        setDataRooms((prev) => prev.map((dr) => (dr.id === id ? data : dr)))
+
+        if (currentDataRoom?.id === id) {
+          setCurrentDataRoom(data)
+        }
+      }
+    },
+    [currentDataRoom],
   )
 
   const deleteDataRoom = useCallback(
     async (id: string) => {
-      const updated = dataRooms.filter((dr) => dr.id !== id)
-      const updatedFolders = folders.filter((f) => f.dataRoomId !== id)
-      const updatedFiles = files.filter((f) => f.dataRoomId !== id)
+      const supabase = createClient()
+      const { error } = await supabase.from("data_rooms").delete().eq("id", id)
 
-      setDataRooms(updated)
-      setFolders(updatedFolders)
-      setFiles(updatedFiles)
+      if (error) {
+        console.error("Error deleting data room:", error)
+        throw error
+      }
+
+      setDataRooms((prev) => prev.filter((dr) => dr.id !== id))
 
       if (currentDataRoom?.id === id) {
         setCurrentDataRoom(null)
         setCurrentFolder(null)
       }
-
-      await saveData({ dataRooms: updated, folders: updatedFolders, files: updatedFiles })
     },
-    [dataRooms, folders, files, currentDataRoom, saveState],
+    [currentDataRoom],
   )
 
   const selectDataRoom = useCallback((dataRoom: DataRoom | null) => {
@@ -113,54 +230,68 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
   // Folder operations
   const createFolder = useCallback(
     async (name: string, parentFolderId: string | null) => {
-      if (!currentDataRoom) return
+      if (!currentDataRoom || !userId) return
 
-      const newFolder: Folder = {
-        id: generateId(),
-        name,
-        dataRoomId: currentDataRoom.id,
-        parentFolderId,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("folders")
+        .insert({
+          name,
+          data_room_id: currentDataRoom.id,
+          parent_id: parentFolderId,
+          owner_id: userId,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error creating folder:", error)
+        throw error
       }
-      const updated = [...folders, newFolder]
-      setFolders(updated)
-      await saveState({ folders: updated })
+
+      if (data) {
+        setFolders((prev) => [...prev, data])
+      }
     },
-    [currentDataRoom, folders, saveState],
+    [currentDataRoom, userId],
   )
 
-  const renameFolder = useCallback(
-    async (id: string, newName: string) => {
-      const updated = folders.map((f) => (f.id === id ? { ...f, name: newName, updatedAt: Date.now() } : f))
-      setFolders(updated)
-      await saveState({ folders: updated })
-    },
-    [folders, saveState],
-  )
+  const renameFolder = useCallback(async (id: string, newName: string) => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("folders")
+      .update({ name: newName, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error renaming folder:", error)
+      throw error
+    }
+
+    if (data) {
+      setFolders((prev) => prev.map((f) => (f.id === id ? data : f)))
+    }
+  }, [])
 
   const deleteFolder = useCallback(
     async (id: string) => {
-      // Recursively find all descendant folders
-      const getAllDescendants = (folderId: string): string[] => {
-        const children = folders.filter((f) => f.parentFolderId === folderId)
-        return [folderId, ...children.flatMap((child) => getAllDescendants(child.id))]
+      const supabase = createClient()
+      const { error } = await supabase.from("folders").delete().eq("id", id)
+
+      if (error) {
+        console.error("Error deleting folder:", error)
+        throw error
       }
 
-      const foldersToDelete = getAllDescendants(id)
-      const updatedFolders = folders.filter((f) => !foldersToDelete.includes(f.id))
-      const updatedFiles = files.filter((f) => !foldersToDelete.includes(f.folderId))
-
-      setFolders(updatedFolders)
-      setFiles(updatedFiles)
+      setFolders((prev) => prev.filter((f) => f.id !== id))
 
       if (currentFolder?.id === id) {
         setCurrentFolder(null)
       }
-
-      await saveData({ dataRooms, folders: updatedFolders, files: updatedFiles })
     },
-    [folders, files, dataRooms, currentFolder],
+    [currentFolder],
   )
 
   const selectFolder = useCallback((folder: Folder | null) => {
@@ -178,7 +309,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
         const folder = folders.find((f) => f.id === currentId)
         if (!folder) break
         path.unshift(folder)
-        currentId = folder.parentFolderId
+        currentId = folder.parent_id
       }
 
       return path
@@ -188,43 +319,66 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
 
   // File operations
   const uploadFile = useCallback(
-    async (name: string, content: string, folderId: string, size: number) => {
-      if (!currentDataRoom) return
+    async (name: string, content: string, folderId: string | null, size: number) => {
+      if (!currentDataRoom || !userId) return
 
-      const newFile: File = {
-        id: generateId(),
-        name,
-        dataRoomId: currentDataRoom.id,
-        folderId,
-        content,
-        size,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("files")
+        .insert({
+          name,
+          data_room_id: currentDataRoom.id,
+          folder_id: folderId,
+          content,
+          size,
+          mime_type: "application/pdf",
+          owner_id: userId,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error uploading file:", error)
+        throw error
       }
-      const updated = [...files, newFile]
-      setFiles(updated)
-      await saveState({ files: updated })
+
+      if (data) {
+        setFiles((prev) => [...prev, data])
+      }
     },
-    [currentDataRoom, files, saveState],
+    [currentDataRoom, userId],
   )
 
-  const renameFile = useCallback(
-    async (id: string, newName: string) => {
-      const updated = files.map((f) => (f.id === id ? { ...f, name: newName, updatedAt: Date.now() } : f))
-      setFiles(updated)
-      await saveState({ files: updated })
-    },
-    [files, saveState],
-  )
+  const renameFile = useCallback(async (id: string, newName: string) => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("files")
+      .update({ name: newName, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single()
 
-  const deleteFile = useCallback(
-    async (id: string) => {
-      const updated = files.filter((f) => f.id !== id)
-      setFiles(updated)
-      await saveState({ files: updated })
-    },
-    [files, saveState],
-  )
+    if (error) {
+      console.error("Error renaming file:", error)
+      throw error
+    }
+
+    if (data) {
+      setFiles((prev) => prev.map((f) => (f.id === id ? data : f)))
+    }
+  }, [])
+
+  const deleteFile = useCallback(async (id: string) => {
+    const supabase = createClient()
+    const { error } = await supabase.from("files").delete().eq("id", id)
+
+    if (error) {
+      console.error("Error deleting file:", error)
+      throw error
+    }
+
+    setFiles((prev) => prev.filter((f) => f.id !== id))
+  }, [])
 
   return (
     <DataRoomContext.Provider
@@ -235,6 +389,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
         currentDataRoom,
         currentFolder,
         createDataRoom,
+        renameDataRoom,
         deleteDataRoom,
         selectDataRoom,
         createFolder,

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronRight, Folder, FolderPlus, MoreVertical, Edit, Trash2, FolderOpen, Home } from "lucide-react"
+import { ChevronRight, Folder, FolderPlus, MoreVertical, Edit, Trash2, FolderOpen, Home, Share2 } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -37,6 +37,8 @@ import {
 import { FileUploader } from "@/components/file-uploader"
 import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
+import { GlobalSearch } from "@/components/global-search"
+import { ShareDialog } from "@/components/share-dialog"
 
 export function FolderView() {
   const {
@@ -123,6 +125,14 @@ export function FolderView() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <GlobalSearch
+          dataRoomId={currentDataRoom.id}
+          folderId={currentFolderId}
+          placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
+        />
+      </div>
+
       {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
         <Breadcrumb>
@@ -208,6 +218,16 @@ export function FolderView() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <ShareDialog itemType="folder" itemId={folder.id} itemName={folder.name}>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault()
+                                }}
+                              >
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Share
+                              </DropdownMenuItem>
+                            </ShareDialog>
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()

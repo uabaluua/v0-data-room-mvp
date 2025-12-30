@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, MoreVertical, Edit, Trash2, Eye } from "lucide-react"
+import { FileText, MoreVertical, Edit, Trash2, Eye, Share2 } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ShareDialog } from "@/components/share-dialog"
 
 interface FileListProps {
   currentFiles: Array<{
@@ -119,6 +120,16 @@ export function FileList({ currentFiles, onViewFile }: FileListProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <ShareDialog itemType="file" itemId={file.id} itemName={file.name}>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                          }}
+                        >
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </DropdownMenuItem>
+                      </ShareDialog>
                       <DropdownMenuItem onClick={() => onViewFile(file.id)}>
                         <Eye className="h-4 w-4 mr-2" />
                         View
