@@ -96,7 +96,9 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
       const { data: dataRoomsData } = await supabase
         .from("data_rooms")
         .select("*")
-        .order("created_at", { ascending: false })
+        // .order("created_at", { ascending: false })
+
+        debugger
 
       if (dataRoomsData) {
         setDataRooms(dataRoomsData)
