@@ -67,9 +67,16 @@ export function FileUploader({ currentFolderId, variant = "default" }: FileUploa
     setIsUploading(true)
 
     try {
+      // Convert "root" to null for database
+      const folderId = currentFolderId === "root" ? null : currentFolderId
+      
       // Check for duplicate filenames
       const existingFileNames = files
-        .filter((f) => f.folderId === currentFolderId && f.dataRoomId === currentDataRoom.id)
+        .filter((f) => {
+          // Convert null folder_id to "root" for comparison
+          const fFolderId = f.folder_id === null ? "root" : f.folder_id
+          return fFolderId === currentFolderId && f.data_room_id === currentDataRoom.id
+        })
         .map((f) => f.name.toLowerCase())
 
       const filesToUpload = Array.from(selectedFiles)
@@ -94,7 +101,7 @@ export function FileUploader({ currentFolderId, variant = "default" }: FileUploa
           reader.readAsDataURL(file)
         })
 
-        await uploadFile(fileName, fileContent, currentFolderId, file.size)
+        await uploadFile(fileName, fileContent, folderId, file.size)
         existingFileNames.push(fileName.toLowerCase())
       }
 

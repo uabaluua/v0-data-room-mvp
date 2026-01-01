@@ -4,7 +4,7 @@
 export interface DataRoom {
   id: string
   name: string
-  createdAt: number
+  created_at: number
   updatedAt: number
 }
 
@@ -13,7 +13,7 @@ export interface Folder {
   name: string
   dataRoomId: string
   parentFolderId: string | null // null means root level
-  createdAt: number
+  created_at: number
   updatedAt: number
 }
 
@@ -24,7 +24,7 @@ export interface File {
   folderId: string
   content: string // Base64 encoded PDF content
   size: number
-  createdAt: number
+  created_at: number
   updatedAt: number
 }
 

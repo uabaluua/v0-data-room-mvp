@@ -31,7 +31,7 @@ interface ShareDialogProps {
 interface Share {
   id: string
   shared_with: string | null
-  shared_with_email?: string
+  shared_with_profile: { id: string; email: string } | null
   permission: "view" | "edit"
   share_token: string | null
   created_at: string
@@ -57,7 +57,14 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
 
     const columnName = itemType === "data_room" ? "data_room_id" : itemType === "folder" ? "folder_id" : "file_id"
 
-    const { data, error } = await supabase.from("shares").select("*, profiles(email)").eq(columnName, itemId)
+    const { data, error } = await supabase
+        .from("shares")
+        .select(`
+          *,
+          shared_by_profile:profiles!shares_shared_by_fkey (id, email),
+          shared_with_profile:profiles!shares_shared_with_fkey (id, email)
+        `)
+        .eq(columnName, itemId)
 
     if (error) {
       console.error("Error loading shares:", error)
@@ -67,8 +74,8 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
     if (data) {
       const formattedShares = data.map((share: any) => ({
         ...share,
-        shared_with_email: share.profiles?.email,
       }))
+
       setShares(formattedShares)
 
       // Find existing share link
@@ -94,12 +101,9 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
 
     // Find user by email
     const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email.trim())
-      .single()
+        .rpc("get_profile_id_by_email", { p_email: email.trim() })
 
-    if (profileError || !profileData) {
+    if (profileError || !profileData?.id) {
       toast({
         title: "Error",
         description: "User not found with this email address",
@@ -312,7 +316,7 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                     .map((share) => (
                       <div key={share.id} className="flex items-center justify-between p-2 rounded-lg border">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-sm truncate">{share.shared_with_email}</span>
+                          <span className="text-sm truncate">{share.shared_with_profile?.email}</span>
                           <Badge variant={share.permission === "edit" ? "default" : "secondary"}>
                             {share.permission}
                           </Badge>
