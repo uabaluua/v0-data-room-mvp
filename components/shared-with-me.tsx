@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useDataRoom } from "@/lib/data-room-context"
+import { PDFViewer } from "@/components/pdf-viewer"
+import { useRouter } from "next/navigation"
 import type { DataRoom, Folder as FolderType, File as FileType } from "@/lib/data-room-context"
 
 interface SharedItem {
@@ -21,7 +23,10 @@ interface SharedItem {
 export function SharedWithMe() {
   const [sharedItems, setSharedItems] = useState<SharedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [viewingFileId, setViewingFileId] = useState<string | null>(null)
+  const [viewingFile, setViewingFile] = useState<FileType | null>(null)
   const { selectDataRoom, selectFolder, dataRooms, folders } = useDataRoom()
+  const router = useRouter()
 
   useEffect(() => {
     loadSharedItems()
@@ -38,6 +43,7 @@ export function SharedWithMe() {
     if (!user) return
 
     // Get all shares for this user
+    // Note: files(*) will include all fields including the data field
     const { data: shares, error } = await supabase
       .from("shares")
       .select(
@@ -95,34 +101,97 @@ export function SharedWithMe() {
     setIsLoading(false)
   }
 
-  const handleOpenItem = (item: SharedItem) => {
+  const handleOpenItem = async (item: SharedItem) => {
     if (item.type === "data_room") {
-      const dataRoom = dataRooms.find((dr) => dr.id === (item.item as DataRoom).id)
-      if (dataRoom) {
-        selectDataRoom(dataRoom)
-      }
+      const dataRoom = item.item as DataRoom
+      // Use the item directly if not in dataRooms yet
+      selectDataRoom(dataRoom)
+      router.push(`/protected?dataRoom=${dataRoom.id}`)
     } else if (item.type === "folder") {
-      const folder = folders.find((f) => f.id === (item.item as FolderType).id)
-      if (folder) {
-        // First select the data room
-        const dataRoom = dataRooms.find((dr) => dr.id === folder.data_room_id)
-        if (dataRoom) {
-          selectDataRoom(dataRoom)
-          selectFolder(folder)
-        }
+      const folder = item.item as FolderType
+      // Load the data room if needed
+      const supabase = createClient()
+      const { data: dataRoomData } = await supabase
+        .from("data_rooms")
+        .select("*")
+        .eq("id", folder.data_room_id)
+        .single()
+      
+      if (dataRoomData) {
+        selectDataRoom(dataRoomData)
+        selectFolder(folder)
+        router.push(`/protected?dataRoom=${folder.data_room_id}&folder=${folder.id}`)
       }
     } else if (item.type === "file") {
       const file = item.item as FileType
-      const dataRoom = dataRooms.find((dr) => dr.id === file.data_room_id)
-      if (dataRoom) {
-        selectDataRoom(dataRoom)
-        if (file.folder_id) {
-          const folder = folders.find((f) => f.id === file.folder_id)
-          if (folder) {
-            selectFolder(folder)
+      const supabase = createClient()
+      
+      // Try to load the data room if user has access, but don't fail if they don't
+      // (file might be shared without data room access)
+      try {
+        const { data: dataRoomData } = await supabase
+          .from("data_rooms")
+          .select("*")
+          .eq("id", file.data_room_id)
+          .single()
+        
+        if (dataRoomData) {
+          selectDataRoom(dataRoomData)
+          
+          if (file.folder_id) {
+            const { data: folderData } = await supabase
+              .from("folders")
+              .select("*")
+              .eq("id", file.folder_id)
+              .single()
+            
+            if (folderData) {
+              selectFolder(folderData)
+            }
           }
         }
+      } catch (error) {
+        // If data room access fails, that's okay - we can still open the file
+        console.log("Could not load data room for shared file, opening file directly:", error)
       }
+      
+      // Always reload file to ensure we have the data field (it might be excluded from the shares query)
+      console.log("Loading file data for shared file:", file.id)
+      const { data: fileData, error: fileError } = await supabase
+        .from("files")
+        .select("*")
+        .eq("id", file.id)
+        .single()
+      
+      if (fileError || !fileData) {
+        console.error("Error loading file data:", fileError)
+        return
+      }
+      
+      console.log("File data loaded, size:", fileData.data?.length || 0)
+      
+      // Ensure data is in correct format (data URL)
+      let fileWithData = { ...fileData }
+      if (fileWithData.data) {
+        if (!fileWithData.data.startsWith("data:")) {
+          // If it's just base64, add the data URL prefix
+          fileWithData.data = `data:application/pdf;base64,${fileWithData.data}`
+        }
+      } else {
+        console.error("File data is missing or empty")
+        return
+      }
+      
+      // Open the file viewer directly - pass the file object with data
+      setViewingFile(fileWithData)
+      setViewingFileId(file.id)
+      
+      // Update URL - include data room if we have it, otherwise just the file
+      // if (file.data_room_id) {
+      //   router.push(`/protected?dataRoom=${file.data_room_id}${file.folder_id ? `&folder=${file.folder_id}` : ''}&file=${file.id}`)
+      // } else {
+      //   router.push(`/protected?file=${file.id}`)
+      // }
     }
   }
 
@@ -212,6 +281,18 @@ export function SharedWithMe() {
             </Card>
           ))}
         </div>
+      )}
+      
+      {viewingFileId && viewingFile && (
+        <PDFViewer 
+          fileId={viewingFileId} 
+          file={viewingFile}
+          onClose={() => {
+            setViewingFileId(null)
+            setViewingFile(null)
+            router.push("/protected")
+          }} 
+        />
       )}
     </div>
   )

@@ -110,7 +110,7 @@ AS $$
 $$;
 
 -- Function to find user by email
-CREATE OR REPLACE FUNCTION public.get_profile_id_by_email(p_email text)
+CREATE OR REPLACE FUNCTION public.get_profile_by_email(p_email text)
 RETURNS public.profiles
 LANGUAGE sql
 SECURITY DEFINER
@@ -122,7 +122,7 @@ AS $$
     LIMIT 1;
 $$;
 
-ALTER FUNCTION public.get_profile_id_by_email(text) OWNER TO postgres;
+ALTER FUNCTION public.get_profile_by_email(text) OWNER TO postgres;
 
 -- Enable Row Level Security on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;

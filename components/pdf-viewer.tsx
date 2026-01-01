@@ -31,12 +31,22 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
   // If file prop is provided, we don't need to load it
   useEffect(() => {
     if (fileProp) {
-      setFile(fileProp)
+      console.log("PDFViewer: Using file prop, data length:", fileProp.data?.length || 0)
+      // Ensure data is in correct format
+      const fileWithFormattedData = {
+        ...fileProp,
+        data: fileProp.data?.startsWith("data:") 
+          ? fileProp.data 
+          : `data:application/pdf;base64,${fileProp.data}`
+      }
+      setFile(fileWithFormattedData)
     } else if (fileToUse) {
+      console.log("PDFViewer: Using file from context, data length:", fileToUse.data?.length || 0)
       setFile(fileToUse)
     } else {
       // Try to load the file directly if not in context
       async function loadFile() {
+        console.log("PDFViewer: Loading file from database:", fileId)
         const supabase = createClient()
         const { data, error } = await supabase
           .from("files")
@@ -45,7 +55,17 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
           .single()
 
         if (data && !error) {
-          setFile(data)
+          console.log("PDFViewer: File loaded, data length:", data.data?.length || 0)
+          // Ensure data is in correct format
+          const fileWithFormattedData = {
+            ...data,
+            data: data.data?.startsWith("data:") 
+              ? data.data 
+              : `data:application/pdf;base64,${data.data}`
+          }
+          setFile(fileWithFormattedData)
+        } else {
+          console.error("PDFViewer: Error loading file:", error)
         }
       }
       loadFile()
@@ -59,7 +79,7 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
   if (!file) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" showCloseButton={false}>
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading file...</p>
           </div>
@@ -70,17 +90,33 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
 
   const handleDownload = () => {
     const link = document.createElement("a")
-    link.href = file.data
+    // Ensure data is in correct format
+    let dataUrl = file.data
+    if (!dataUrl.startsWith("data:")) {
+      dataUrl = `data:application/pdf;base64,${dataUrl}`
+    }
+    link.href = dataUrl
     link.download = file.name
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
+  // Ensure file data is in correct format for iframe
+  const getFileDataUrl = () => {
+    if (!file.data) return ""
+    // If already a data URL, use it directly
+    if (file.data.startsWith("data:")) {
+      return file.data
+    }
+    // Otherwise, assume it's base64 and add the prefix
+    return `data:application/pdf;base64,${file.data}`
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogTitle>{file.name}</DialogTitle>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0" showCloseButton={false}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-background">
           <div className="flex-1 min-w-0">
@@ -110,7 +146,7 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
         <div className="flex-1 overflow-auto bg-muted/20 p-4">
           <div className="mx-auto" style={{ width: `${zoom}%`, maxWidth: "100%" }}>
             <iframe
-              src={file.data}
+              src={getFileDataUrl()}
               className="w-full h-[calc(90vh-100px)] bg-white rounded shadow-lg"
               title={file.name}
             />

@@ -2,7 +2,11 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DataRoomApp } from "@/components/data-room-app"
 
-export default async function ProtectedPage() {
+export default async function ProtectedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dataRoom?: string; folder?: string; file?: string }>
+}) {
   const supabase = await createClient()
 
   const {
@@ -12,5 +16,7 @@ export default async function ProtectedPage() {
     redirect("/auth/login")
   }
 
-  return <DataRoomApp userId={user.id} userEmail={user.email || ""} />
+  const params = await searchParams
+
+  return <DataRoomApp userId={user.id} userEmail={user.email || ""} initialDataRoomId={params.dataRoom} initialFolderId={params.folder} initialFileId={params.file} />
 }

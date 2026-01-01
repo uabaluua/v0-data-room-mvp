@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronRight, Folder, FolderPlus, MoreVertical, Edit, Trash2, FolderOpen, Home, Share2 } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,8 @@ export function FolderView() {
     getFolderPath,
   } = useDataRoom()
 
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [editingFolder, setEditingFolder] = useState<string | null>(null)
@@ -60,6 +63,73 @@ export function FolderView() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [viewingFileId, setViewingFileId] = useState<string | null>(null)
+
+  // Sync URL file param with state (only on mount or when URL changes)
+  useEffect(() => {
+    const fileParam = searchParams.get("file")
+    if (fileParam && fileParam !== viewingFileId) {
+      setViewingFileId(fileParam)
+    } else if (!fileParam && viewingFileId) {
+      // Clear if URL doesn't have file but state does
+      setViewingFileId(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]) // Only sync when searchParams object changes
+
+  // Update URL when viewing file changes (with guard to prevent loops)
+  useEffect(() => {
+    if (!currentDataRoom) return
+    
+    const currentFileParam = searchParams.get("file")
+    
+    // Only update if URL doesn't match state
+    if (viewingFileId && currentFileParam !== viewingFileId) {
+      const params = new URLSearchParams()
+      params.set("dataRoom", currentDataRoom.id)
+      if (currentFolder) {
+        params.set("folder", currentFolder.id)
+      }
+      params.set("file", viewingFileId)
+      router.replace(`/protected?${params.toString()}`, { scroll: false })
+    } else if (!viewingFileId && currentFileParam) {
+      // Clear file from URL if state doesn't have it
+      const params = new URLSearchParams()
+      params.set("dataRoom", currentDataRoom.id)
+      if (currentFolder) {
+        params.set("folder", currentFolder.id)
+      }
+      router.replace(`/protected?${params.toString()}`, { scroll: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewingFileId, currentDataRoom?.id, currentFolder?.id])
+
+  // Update URL when folder changes (with guard to prevent loops)
+  useEffect(() => {
+    if (!currentDataRoom) return
+    
+    const currentFolderParam = searchParams.get("folder")
+    const currentFileParam = searchParams.get("file")
+    
+    // Only update if URL doesn't match state
+    if (currentFolder && currentFolderParam !== currentFolder.id) {
+      const params = new URLSearchParams()
+      params.set("dataRoom", currentDataRoom.id)
+      params.set("folder", currentFolder.id)
+      if (viewingFileId || currentFileParam) {
+        params.set("file", viewingFileId || currentFileParam || "")
+      }
+      router.replace(`/protected?${params.toString()}`, { scroll: false })
+    } else if (!currentFolder && currentFolderParam) {
+      // Clear folder from URL if we're at root
+      const params = new URLSearchParams()
+      params.set("dataRoom", currentDataRoom.id)
+      if (viewingFileId || currentFileParam) {
+        params.set("file", viewingFileId || currentFileParam || "")
+      }
+      router.replace(`/protected?${params.toString()}`, { scroll: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFolder?.id, currentDataRoom?.id, viewingFileId])
 
   if (!currentDataRoom) return null
 

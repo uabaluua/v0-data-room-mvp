@@ -101,7 +101,7 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
 
     // Find user by email
     const { data: profileData, error: profileError } = await supabase
-        .rpc("get_profile_id_by_email", { p_email: email.trim() })
+        .rpc("get_profile_by_email", { p_email: email.trim() })
 
     if (profileError || !profileData?.id) {
       toast({
