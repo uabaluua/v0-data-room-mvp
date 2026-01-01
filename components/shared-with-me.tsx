@@ -24,8 +24,7 @@ export function SharedWithMe() {
   const [sharedItems, setSharedItems] = useState<SharedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [viewingFileId, setViewingFileId] = useState<string | null>(null)
-  const [viewingFile, setViewingFile] = useState<FileType | null>(null)
-  const { selectDataRoom, selectFolder, dataRooms, folders } = useDataRoom()
+  const { selectDataRoom, selectFolder } = useDataRoom()
   const router = useRouter()
 
   useEffect(() => {
@@ -106,7 +105,7 @@ export function SharedWithMe() {
       const dataRoom = item.item as DataRoom
       // Use the item directly if not in dataRooms yet
       selectDataRoom(dataRoom)
-      router.push(`/protected?dataRoom=${dataRoom.id}`)
+      router.push(`/?dataRoom=${dataRoom.id}`)
     } else if (item.type === "folder") {
       const folder = item.item as FolderType
       // Load the data room if needed
@@ -120,7 +119,7 @@ export function SharedWithMe() {
       if (dataRoomData) {
         selectDataRoom(dataRoomData)
         selectFolder(folder)
-        router.push(`/protected?dataRoom=${folder.data_room_id}&folder=${folder.id}`)
+        router.push(`/?dataRoom=${folder.data_room_id}&folder=${folder.id}`)
       }
     } else if (item.type === "file") {
       const file = item.item as FileType
@@ -167,30 +166,14 @@ export function SharedWithMe() {
         console.error("Error loading file data:", fileError)
         return
       }
-      
-      console.log("File data loaded, size:", fileData.data?.length || 0)
-      
-      // Ensure data is in correct format (data URL)
-      let fileWithData = { ...fileData }
-      if (fileWithData.data) {
-        if (!fileWithData.data.startsWith("data:")) {
-          // If it's just base64, add the data URL prefix
-          fileWithData.data = `data:application/pdf;base64,${fileWithData.data}`
-        }
-      } else {
-        console.error("File data is missing or empty")
-        return
-      }
-      
-      // Open the file viewer directly - pass the file object with data
-      setViewingFile(fileWithData)
-      setViewingFileId(file.id)
+
+      setViewingFileId(fileData.id)
       
       // Update URL - include data room if we have it, otherwise just the file
       // if (file.data_room_id) {
-      //   router.push(`/protected?dataRoom=${file.data_room_id}${file.folder_id ? `&folder=${file.folder_id}` : ''}&file=${file.id}`)
+      //   router.push(`/?dataRoom=${file.data_room_id}${file.folder_id ? `&folder=${file.folder_id}` : ''}&file=${file.id}`)
       // } else {
-      //   router.push(`/protected?file=${file.id}`)
+      //   router.push(`/?file=${file.id}`)
       // }
     }
   }
@@ -283,14 +266,12 @@ export function SharedWithMe() {
         </div>
       )}
       
-      {viewingFileId && viewingFile && (
+      {viewingFileId && (
         <PDFViewer 
-          fileId={viewingFileId} 
-          file={viewingFile}
+          fileId={viewingFileId}
           onClose={() => {
             setViewingFileId(null)
-            setViewingFile(null)
-            router.push("/protected")
+            router.push("/")
           }} 
         />
       )}

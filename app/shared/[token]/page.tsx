@@ -38,7 +38,7 @@ function SharedContent({ share }: { share: Share }) {
       setLoadingContent(true)
       setLoadError(null)
       const supabase = createClient()
-      
+
       try {
         if (share.data_room_id) {
           // Load and select the shared data room
@@ -48,16 +48,16 @@ function SharedContent({ share }: { share: Share }) {
             .select("*")
             .eq("id", share.data_room_id)
             .single()
-          
+
           console.log("Data room query result:", { data, error })
-          
+
           if (error) {
             console.error("Error loading shared data room:", error)
             setLoadError(`Failed to load data room: ${error.message}`)
             setLoadingContent(false)
             return
           }
-          
+
           if (data) {
             console.log("Setting data room:", data)
             selectDataRoom(data)
@@ -74,16 +74,16 @@ function SharedContent({ share }: { share: Share }) {
             .select("*, data_rooms(*)")
             .eq("id", share.folder_id)
             .single()
-          
+
           console.log("Folder query result:", { folderData, folderError })
-          
+
           if (folderError) {
             console.error("Error loading shared folder:", folderError)
             setLoadError(`Failed to load folder: ${folderError.message}`)
             setLoadingContent(false)
             return
           }
-          
+
           if (folderData) {
             console.log("Setting folder and data room:", folderData)
             if (folderData.data_rooms) {
@@ -103,16 +103,16 @@ function SharedContent({ share }: { share: Share }) {
             .select("*")
             .eq("id", share.file_id)
             .single()
-          
+
           console.log("File query result:", { fileData, fileError })
-          
+
           if (fileError) {
             console.error("Error loading shared file:", fileError)
             setLoadError(`Failed to load file: ${fileError.message}`)
             setLoadingContent(false)
             return
           }
-          
+
           if (fileData) {
             console.log("Setting file:", fileData)
             setViewingFile(fileData)
@@ -129,7 +129,7 @@ function SharedContent({ share }: { share: Share }) {
         setLoadingContent(false)
       }
     }
-    
+
     loadSharedContent()
   }, [share, selectDataRoom, selectFolder])
 
@@ -351,4 +351,3 @@ export default function SharedPage() {
     </DataRoomProvider>
   )
 }
-

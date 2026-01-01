@@ -48,6 +48,7 @@ interface DataRoomContextType {
   renameDataRoom: (id: string, newName: string) => Promise<void>
   deleteDataRoom: (id: string) => Promise<void>
   selectDataRoom: (dataRoom: DataRoom | null) => void
+  getDataRoomById: (id: string) => DataRoom | null
 
   // Folder operations
   createFolder: (name: string, parentFolderId: string | null) => Promise<void>
@@ -380,6 +381,14 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
     setFiles((prev) => prev.filter((f) => f.id !== id))
   }, [])
 
+  const getDataRoomById = useCallback(
+    (id: string): DataRoom | null => {
+      const dataRoom = dataRooms.find((dr) => dr.id === id)
+      return dataRoom || null
+    },
+    [dataRooms],
+  )
+
   return (
     <DataRoomContext.Provider
       value={{
@@ -392,6 +401,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
         renameDataRoom,
         deleteDataRoom,
         selectDataRoom,
+        getDataRoomById,
         createFolder,
         renameFolder,
         deleteFolder,

@@ -5,46 +5,39 @@ import { X, Download, ZoomIn, ZoomOut } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { DialogTitle } from "@radix-ui/react-dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 interface PDFViewerProps {
   fileId: string
   onClose: () => void
-  file?: {
-    id: string
-    name: string
-    data: string
-    size: number
-    created_at: string
-  }
 }
 
-export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
+interface File {
+  id: string
+  name: string
+  data: string
+  size: number
+  created_at: string
+}
+
+export function PDFViewer({ fileId, onClose }: PDFViewerProps) {
   const { files } = useDataRoom()
   const [zoom, setZoom] = useState(100)
-  const [file, setFile] = useState<typeof fileProp | null>(fileProp || null)
+  const [file, setFile] = useState<File | null>(null)
 
-  // If file prop is provided, use it; otherwise find from context
-  const fileToUse = fileProp || files.find((f) => f.id === fileId)
-
-  // If file prop is provided, we don't need to load it
+  // If no file prop, try to find from context or load from database
   useEffect(() => {
-    if (fileProp) {
-      console.log("PDFViewer: Using file prop, data length:", fileProp.data?.length || 0)
-      // Ensure data is in correct format
-      const fileWithFormattedData = {
-        ...fileProp,
-        data: fileProp.data?.startsWith("data:") 
-          ? fileProp.data 
-          : `data:application/pdf;base64,${fileProp.data}`
-      }
-      setFile(fileWithFormattedData)
-    } else if (fileToUse) {
-      console.log("PDFViewer: Using file from context, data length:", fileToUse.data?.length || 0)
-      setFile(fileToUse)
+    // Check if we already have this file loaded
+    if (file && file.id === fileId) {
+      return
+    }
+    
+    const fileFromContext = files.find((f) => f.id === fileId)
+    if (fileFromContext) {
+      console.log("PDFViewer: Using file from context, data length:", fileFromContext.data?.length || 0)
+      setFile(fileFromContext)
     } else {
-      // Try to load the file directly if not in context
+      // Load from database
       async function loadFile() {
         console.log("PDFViewer: Loading file from database:", fileId)
         const supabase = createClient()
@@ -70,7 +63,8 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
       }
       loadFile()
     }
-  }, [fileId, fileProp, fileToUse])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileId, files])
 
   useEffect(() => {
     console.log("[v0] PDF viewer opened for file:", fileId)
@@ -80,6 +74,7 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
     return (
       <Dialog open={true} onOpenChange={onClose}>
         <DialogContent className="max-w-md" showCloseButton={false}>
+          <DialogTitle className="sr-only">Loading file</DialogTitle>
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading file...</p>
           </div>
@@ -103,20 +98,29 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
   }
 
   // Ensure file data is in correct format for iframe
-  const getFileDataUrl = () => {
-    if (!file.data) return ""
-    // If already a data URL, use it directly
-    if (file.data.startsWith("data:")) {
-      return file.data
-    }
-    // Otherwise, assume it's base64 and add the prefix
-    return `data:application/pdf;base64,${file.data}`
+  const getFileBlobUrl = () => {
+    if (!file?.data) return ""
+
+    // Strip prefix if present
+    const base64 = file.data.startsWith("data:")
+        ? file.data.split(",")[1]
+        : file.data
+
+    const byteCharacters = atob(base64)
+    const byteNumbers = new Array(byteCharacters.length)
+        .fill(0)
+        .map((_, i) => byteCharacters.charCodeAt(i))
+
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: "application/pdf" })
+
+    return URL.createObjectURL(blob)
   }
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogTitle>{file.name}</DialogTitle>
       <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0" showCloseButton={false}>
+        <DialogTitle className="sr-only">{file.name}</DialogTitle>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-background">
           <div className="flex-1 min-w-0">
@@ -146,7 +150,8 @@ export function PDFViewer({ fileId, onClose, file: fileProp }: PDFViewerProps) {
         <div className="flex-1 overflow-auto bg-muted/20 p-4">
           <div className="mx-auto" style={{ width: `${zoom}%`, maxWidth: "100%" }}>
             <iframe
-              src={getFileDataUrl()}
+              key={file.id} // Force re-render when file changes
+              src={getFileBlobUrl()}
               className="w-full h-[calc(90vh-100px)] bg-white rounded shadow-lg"
               title={file.name}
             />

@@ -40,10 +40,10 @@ import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { GlobalSearch } from "@/components/global-search"
 import { ShareDialog } from "@/components/share-dialog"
+import {DataRoom} from "@/lib/data-room-context"
 
-export function FolderView() {
+export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
   const {
-    currentDataRoom,
     currentFolder,
     folders,
     files,
@@ -78,34 +78,34 @@ export function FolderView() {
 
   // Update URL when viewing file changes (with guard to prevent loops)
   useEffect(() => {
-    if (!currentDataRoom) return
+    if (!dataRoom) return
     
     const currentFileParam = searchParams.get("file")
     
     // Only update if URL doesn't match state
     if (viewingFileId && currentFileParam !== viewingFileId) {
       const params = new URLSearchParams()
-      params.set("dataRoom", currentDataRoom.id)
+      params.set("dataRoom", dataRoom.id)
       if (currentFolder) {
         params.set("folder", currentFolder.id)
       }
       params.set("file", viewingFileId)
-      router.replace(`/protected?${params.toString()}`, { scroll: false })
+      router.replace(`/?${params.toString()}`, { scroll: false })
     } else if (!viewingFileId && currentFileParam) {
       // Clear file from URL if state doesn't have it
       const params = new URLSearchParams()
-      params.set("dataRoom", currentDataRoom.id)
+      params.set("dataRoom", dataRoom.id)
       if (currentFolder) {
         params.set("folder", currentFolder.id)
       }
-      router.replace(`/protected?${params.toString()}`, { scroll: false })
+      router.replace(`/?${params.toString()}`, { scroll: false })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingFileId, currentDataRoom?.id, currentFolder?.id])
+  }, [viewingFileId, dataRoom?.id, currentFolder?.id])
 
   // Update URL when folder changes (with guard to prevent loops)
   useEffect(() => {
-    if (!currentDataRoom) return
+    if (!dataRoom) return
     
     const currentFolderParam = searchParams.get("folder")
     const currentFileParam = searchParams.get("file")
@@ -113,33 +113,33 @@ export function FolderView() {
     // Only update if URL doesn't match state
     if (currentFolder && currentFolderParam !== currentFolder.id) {
       const params = new URLSearchParams()
-      params.set("dataRoom", currentDataRoom.id)
+      params.set("dataRoom", dataRoom.id)
       params.set("folder", currentFolder.id)
       if (viewingFileId || currentFileParam) {
         params.set("file", viewingFileId || currentFileParam || "")
       }
-      router.replace(`/protected?${params.toString()}`, { scroll: false })
+      router.replace(`/?${params.toString()}`, { scroll: false })
     } else if (!currentFolder && currentFolderParam) {
-      // Clear folder from URL if we're at root
+      // Clear folder from URL if we're at root (Home clicked)
       const params = new URLSearchParams()
-      params.set("dataRoom", currentDataRoom.id)
+      params.set("dataRoom", dataRoom.id)
       if (viewingFileId || currentFileParam) {
         params.set("file", viewingFileId || currentFileParam || "")
       }
-      router.replace(`/protected?${params.toString()}`, { scroll: false })
+      router.replace(`/?${params.toString()}`, { scroll: false })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentFolder?.id, currentDataRoom?.id, viewingFileId])
+  }, [currentFolder?.id, dataRoom?.id, viewingFileId])
 
-  if (!currentDataRoom) return null
+  if (!dataRoom) return null
 
   // Get current folder contents
   const currentFolderId = currentFolder?.id || null
   const childFolders = folders.filter(
-    (f) => f.data_room_id === currentDataRoom.id && f.parent_id === currentFolderId,
+    (f) => f.data_room_id === dataRoom.id && f.parent_id === currentFolderId,
   )
   const currentFiles = files
-    .filter((f) => f.data_room_id === currentDataRoom.id && f.folder_id === (currentFolderId || "root"))
+    .filter((f) => f.data_room_id === dataRoom.id && f.folder_id === (currentFolderId || "root"))
     .map((f) => ({
       id: f.id,
       name: f.name,
@@ -202,7 +202,7 @@ export function FolderView() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <GlobalSearch
-          dataRoomId={currentDataRoom.id}
+          dataRoomId={dataRoom.id}
           folderId={currentFolderId}
           placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
         />
