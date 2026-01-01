@@ -80,18 +80,12 @@ export function GlobalSearch({
     const dataRoom = dataRooms.find((dr) => dr.id === result.data_room_id)
     if (!dataRoom) return
 
-    selectDataRoom(dataRoom)
+    selectDataRoom(dataRoom.id)
 
     if (result.type === "folder") {
-      const folder = folders.find((f) => f.id === result.id)
-      if (folder) {
-        selectFolder(folder)
-      }
+      selectFolder(result.id)
     } else if (result.type === "file" && result.folder_id) {
-      const folder = folders.find((f) => f.id === result.folder_id)
-      if (folder) {
-        selectFolder(folder)
-      }
+      selectFolder(result.folder_id)
     }
 
     setIsOpen(false)
@@ -110,9 +104,10 @@ export function GlobalSearch({
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="gap-2"
+        className="gap-2 w-full justify-start"
       >
         <Search className="h-4 w-4" />
+        <span className="hidden lg:inline">Search</span>
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

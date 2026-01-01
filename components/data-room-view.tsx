@@ -23,11 +23,6 @@ export function DataRoomView({roomId, folderId}: {roomId: string, folderId: stri
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{dataRoom.name}</h1>
-        </div>
-      </div>
       <FolderView dataRoom={dataRoom} folderId={folderId} />
     </div>
   )
