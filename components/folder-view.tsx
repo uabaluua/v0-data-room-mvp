@@ -66,11 +66,16 @@ export function FolderView() {
   // Get current folder contents
   const currentFolderId = currentFolder?.id || null
   const childFolders = folders.filter(
-    (f) => f.dataRoomId === currentDataRoom.id && f.parentFolderId === currentFolderId,
+    (f) => f.data_room_id === currentDataRoom.id && f.parent_id === currentFolderId,
   )
-  const currentFiles = files.filter(
-    (f) => f.dataRoomId === currentDataRoom.id && f.folderId === (currentFolderId || "root"),
-  )
+  const currentFiles = files
+    .filter((f) => f.data_room_id === currentDataRoom.id && f.folder_id === (currentFolderId || "root"))
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      size: f.size,
+      createdAt: new Date(f.created_at).getTime(),
+    }))
 
   const folderPath = getFolderPath(currentFolderId)
 

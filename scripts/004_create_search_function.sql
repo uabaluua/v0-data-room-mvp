@@ -35,8 +35,8 @@ BEGIN
     LOWER(f.name) LIKE LOWER('%' || search_query || '%')
     AND (
       f.owner_id = user_id 
-      OR f.data_room_id IN (SELECT data_room_id FROM public.shares WHERE shared_with = user_id)
-      OR f.id IN (SELECT folder_id FROM public.shares WHERE shared_with = user_id)
+      OR f.data_room_id IN (SELECT s.data_room_id FROM public.shares s WHERE s.shared_with = user_id)
+      OR f.id IN (SELECT s.folder_id FROM public.shares s WHERE s.shared_with = user_id)
     )
     AND (search_data_room_id IS NULL OR f.data_room_id = search_data_room_id)
     AND (search_folder_id IS NULL OR f.parent_id = search_folder_id)
@@ -58,13 +58,13 @@ BEGIN
     LOWER(fi.name) LIKE LOWER('%' || search_query || '%')
     AND (
       fi.owner_id = user_id 
-      OR fi.data_room_id IN (SELECT data_room_id FROM public.shares WHERE shared_with = user_id)
-      OR fi.folder_id IN (SELECT folder_id FROM public.shares WHERE shared_with = user_id)
-      OR fi.id IN (SELECT file_id FROM public.shares WHERE shared_with = user_id)
+      OR fi.data_room_id IN (SELECT s.data_room_id FROM public.shares s WHERE s.shared_with = user_id)
+      OR fi.folder_id IN (SELECT s.folder_id FROM public.shares s WHERE s.shared_with = user_id)
+      OR fi.id IN (SELECT s.file_id FROM public.shares s WHERE s.shared_with = user_id)
     )
     AND (search_data_room_id IS NULL OR fi.data_room_id = search_data_room_id)
     AND (search_folder_id IS NULL OR fi.folder_id = search_folder_id)
   
-  ORDER BY created_at DESC;
+  ORDER BY 7 DESC;  -- Order by created_at (7th column in the result set)
 END;
 $$;

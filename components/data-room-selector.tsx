@@ -165,7 +165,7 @@ export function DataRoomSelector() {
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg truncate">{room.name}</CardTitle>
                       <CardDescription className="mt-1.5">
-                        Created {new Date(room.createdAt).toLocaleDateString()}
+                        Created {new Date(room.created_at).toLocaleDateString()}
                       </CardDescription>
                     </div>
                   </div>
