@@ -1,23 +1,35 @@
 "use client"
 
+import { useEffect } from "react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { FolderView } from "@/components/folder-view"
 
 export function DataRoomView({roomId, folderId}: {roomId: string, folderId: string | null}) {
-  const { getDataRoomById } = useDataRoom()
-  const currentDataRoom = getDataRoomById(roomId);
+  const { selectDataRoom, selectFolder, currentDataRoom, dataRooms } = useDataRoom()
 
-  if (!currentDataRoom) return null
+  useEffect(() => {
+    if (roomId) {
+      selectDataRoom(roomId)
+    }
+    if (folderId) {
+      selectFolder(folderId)
+    }
+  }, [roomId, selectDataRoom, folderId, selectFolder])
+
+  // Find the data room from the list
+  const dataRoom = dataRooms.find((dr) => dr.id === roomId) || currentDataRoom
+
+  if (!dataRoom) return null
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{currentDataRoom.name}</h1>
+          <h1 className="text-2xl font-bold">{dataRoom.name}</h1>
           <p className="text-sm text-muted-foreground">Manage folders and documents</p>
         </div>
       </div>
-      <FolderView dataRoom={currentDataRoom} folderId={folderId} />
+      <FolderView dataRoom={dataRoom} folderId={folderId} />
     </div>
   )
 }

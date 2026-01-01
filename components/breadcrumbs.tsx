@@ -8,12 +8,29 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import {useMemo} from "react";
 import {redirect} from "next/navigation";
 import {ChevronRight, Home} from "lucide-react";
-import {DataRoom} from "@/types";
+import {DataRoom, Folder} from "@/types";
 
-export default function Breadcrumbs({dataRoom}: {dataRoom: DataRoom}) {
-  const folderPath: any[] = [];
+const getFolderPath = (folderId: string | null, folders: Folder[]): Folder[] => {
+  if (!folderId) return []
+
+  const path: Folder[] = []
+  let currentId: string | null = folderId
+
+  while (currentId) {
+    const folder = folders.find((f) => f.id === currentId)
+    if (!folder) break
+    path.unshift(folder)
+    currentId = folder.parent_id
+  }
+
+  return path
+}
+
+export default function Breadcrumbs({dataRoom, folders, folderId}: {dataRoom: DataRoom, folders: Folder[], folderId: string | null}) {
+  const folderPath = useMemo(() => getFolderPath(folderId, folders), [folders]);
   return (
     <Breadcrumb>
       <BreadcrumbList>

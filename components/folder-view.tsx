@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import {useState, useEffect, useMemo} from "react"
 import { FolderPlus } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
@@ -18,33 +18,21 @@ import { FileUploader } from "@/components/file-uploader"
 import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { GlobalSearch } from "@/components/global-search"
-import type { DataRoom, File, Folder } from "@/types"
-import {loadFolders, loadFiles} from "@/lib/supabase/data-rooms";
+import type { DataRoom} from "@/types"
 import Breadcrumbs from "@/components/breadcrumbs";
 import FolderEmpty from "@/components/folder-empty";
 import FolderCard from "@/components/folder-card";
 import ConfirmDeletion from "@/components/confirm-deletion";
 
 export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: string | null}) {
-  const [folders, setFolders] = useState<Folder[]>([])
-  const [files, setFiles] = useState<File[]>([])
   const {
     currentFolder,
+    folders,
+    files,
     createFolder,
     renameFolder,
     deleteFolder,
-    getFolderPath,
   } = useDataRoom()
-
-  useEffect(() => {
-    async function loadData() {
-      const folders = await loadFolders(dataRoom.id, folderId);
-      setFolders(folders);
-      const files = await loadFiles(dataRoom.id, folderId);
-      setFiles(files);
-    }
-    loadData();
-  }, []);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
@@ -59,20 +47,16 @@ export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: 
   const childFolders = folders.filter(
     (f) => f.data_room_id === dataRoom.id && f.parent_id === folderId,
   )
-  const currentFiles = files
-    .filter((f) => f.data_room_id === dataRoom.id && f.folder_id === (folderId || "root"))
+  const currentFiles = useMemo(() => files
     .map((f) => ({
       id: f.id,
       name: f.name,
       size: f.size,
       createdAt: new Date(f.created_at).getTime(),
-    }))
-
-  const folderPath = getFolderPath(folderId)
+    })), [files]);
 
   const handleCreate = async () => {
     const trimmedName = newFolderName.trim()
-    debugger
 
     if (!trimmedName) {
       setError("Folder name cannot be empty")
@@ -132,7 +116,7 @@ export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: 
 
       {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
-        <Breadcrumbs dataRoom={dataRoom} />
+        <Breadcrumbs dataRoom={dataRoom} folders={folders} folderId={folderId} />
         <div className="flex items-center gap-2">
           <FileUploader currentFolderId={folderId || "root"} dataRoom={dataRoom} />
           <Button onClick={() => setIsCreateOpen(true)}>
