@@ -16,14 +16,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import {DataRoom} from "@/types";
 
 interface FileUploaderProps {
   currentFolderId: string
   variant?: "default" | "button"
+  dataRoom: DataRoom
 }
 
-export function FileUploader({ currentFolderId, variant = "default" }: FileUploaderProps) {
-  const { uploadFile, files, currentDataRoom } = useDataRoom()
+export function FileUploader({ currentFolderId, variant = "default", dataRoom }: FileUploaderProps) {
+  const { uploadFile, files } = useDataRoom()
   const { toast } = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -62,7 +64,7 @@ export function FileUploader({ currentFolderId, variant = "default" }: FileUploa
 
   const handleUpload = async () => {
     if (!selectedFiles || selectedFiles.length === 0) return
-    if (!currentDataRoom) return
+    if (!dataRoom) return
 
     setIsUploading(true)
 
@@ -75,7 +77,7 @@ export function FileUploader({ currentFolderId, variant = "default" }: FileUploa
         .filter((f) => {
           // Convert null folder_id to "root" for comparison
           const fFolderId = f.folder_id === null ? "root" : f.folder_id
-          return fFolderId === currentFolderId && f.data_room_id === currentDataRoom.id
+          return fFolderId === currentFolderId && f.data_room_id === dataRoom.id
         })
         .map((f) => f.name.toLowerCase())
 
@@ -101,7 +103,7 @@ export function FileUploader({ currentFolderId, variant = "default" }: FileUploa
           reader.readAsDataURL(file)
         })
 
-        await uploadFile(fileName, fileContent, folderId, file.size)
+        await uploadFile(fileName, fileContent, folderId, file.size, dataRoom)
         existingFileNames.push(fileName.toLowerCase())
       }
 

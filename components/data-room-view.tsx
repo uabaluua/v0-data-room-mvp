@@ -3,7 +3,7 @@
 import { useDataRoom } from "@/lib/data-room-context"
 import { FolderView } from "@/components/folder-view"
 
-export function DataRoomView({roomId}: {roomId: string}) {
+export function DataRoomView({roomId, folderId}: {roomId: string, folderId: string | null}) {
   const { getDataRoomById } = useDataRoom()
   const currentDataRoom = getDataRoomById(roomId);
 
@@ -17,7 +17,7 @@ export function DataRoomView({roomId}: {roomId: string}) {
           <p className="text-sm text-muted-foreground">Manage folders and documents</p>
         </div>
       </div>
-      <FolderView dataRoom={currentDataRoom} />
+      <FolderView dataRoom={currentDataRoom} folderId={folderId} />
     </div>
   )
 }

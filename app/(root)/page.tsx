@@ -8,7 +8,6 @@ import { FolderOpen, UserPlus } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 const Dashboard = () => {
-    console.log('bla bla')
   const { isLoading } = useDataRoom()
   const [activeTab, setActiveTab] = useState("my-rooms")
 

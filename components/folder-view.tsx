@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronRight, Folder, FolderPlus, MoreVertical, Edit, Trash2, FolderOpen, Home, Share2 } from "lucide-react"
+import { FolderPlus } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -16,46 +14,38 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { FileUploader } from "@/components/file-uploader"
 import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { GlobalSearch } from "@/components/global-search"
-import { ShareDialog } from "@/components/share-dialog"
-import {DataRoom} from "@/lib/data-room-context"
+import type { DataRoom, File, Folder } from "@/types"
+import {loadFolders, loadFiles} from "@/lib/supabase/data-rooms";
+import Breadcrumbs from "@/components/breadcrumbs";
+import FolderEmpty from "@/components/folder-empty";
+import FolderCard from "@/components/folder-card";
+import ConfirmDeletion from "@/components/confirm-deletion";
 
-export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
+export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: string | null}) {
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [files, setFiles] = useState<File[]>([])
   const {
     currentFolder,
-    folders,
-    files,
     createFolder,
     renameFolder,
     deleteFolder,
-    selectFolder,
     getFolderPath,
   } = useDataRoom()
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  useEffect(() => {
+    async function loadData() {
+      const folders = await loadFolders(dataRoom.id, folderId);
+      setFolders(folders);
+      const files = await loadFiles(dataRoom.id, folderId);
+      setFiles(files);
+    }
+    loadData();
+  }, []);
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [editingFolder, setEditingFolder] = useState<string | null>(null)
@@ -64,82 +54,13 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
   const [error, setError] = useState("")
   const [viewingFileId, setViewingFileId] = useState<string | null>(null)
 
-  // Sync URL file param with state (only on mount or when URL changes)
-  useEffect(() => {
-    const fileParam = searchParams.get("file")
-    if (fileParam && fileParam !== viewingFileId) {
-      setViewingFileId(fileParam)
-    } else if (!fileParam && viewingFileId) {
-      // Clear if URL doesn't have file but state does
-      setViewingFileId(null)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]) // Only sync when searchParams object changes
-
-  // Update URL when viewing file changes (with guard to prevent loops)
-  useEffect(() => {
-    if (!dataRoom) return
-    
-    const currentFileParam = searchParams.get("file")
-    
-    // Only update if URL doesn't match state
-    if (viewingFileId && currentFileParam !== viewingFileId) {
-      const params = new URLSearchParams()
-      params.set("dataRoom", dataRoom.id)
-      if (currentFolder) {
-        params.set("folder", currentFolder.id)
-      }
-      params.set("file", viewingFileId)
-      router.replace(`/?${params.toString()}`, { scroll: false })
-    } else if (!viewingFileId && currentFileParam) {
-      // Clear file from URL if state doesn't have it
-      const params = new URLSearchParams()
-      params.set("dataRoom", dataRoom.id)
-      if (currentFolder) {
-        params.set("folder", currentFolder.id)
-      }
-      router.replace(`/?${params.toString()}`, { scroll: false })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingFileId, dataRoom?.id, currentFolder?.id])
-
-  // Update URL when folder changes (with guard to prevent loops)
-  useEffect(() => {
-    if (!dataRoom) return
-    
-    const currentFolderParam = searchParams.get("folder")
-    const currentFileParam = searchParams.get("file")
-    
-    // Only update if URL doesn't match state
-    if (currentFolder && currentFolderParam !== currentFolder.id) {
-      const params = new URLSearchParams()
-      params.set("dataRoom", dataRoom.id)
-      params.set("folder", currentFolder.id)
-      if (viewingFileId || currentFileParam) {
-        params.set("file", viewingFileId || currentFileParam || "")
-      }
-      router.replace(`/?${params.toString()}`, { scroll: false })
-    } else if (!currentFolder && currentFolderParam) {
-      // Clear folder from URL if we're at root (Home clicked)
-      const params = new URLSearchParams()
-      params.set("dataRoom", dataRoom.id)
-      if (viewingFileId || currentFileParam) {
-        params.set("file", viewingFileId || currentFileParam || "")
-      }
-      router.replace(`/?${params.toString()}`, { scroll: false })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentFolder?.id, dataRoom?.id, viewingFileId])
-
   if (!dataRoom) return null
 
-  // Get current folder contents
-  const currentFolderId = currentFolder?.id || null
   const childFolders = folders.filter(
-    (f) => f.data_room_id === dataRoom.id && f.parent_id === currentFolderId,
+    (f) => f.data_room_id === dataRoom.id && f.parent_id === folderId,
   )
   const currentFiles = files
-    .filter((f) => f.data_room_id === dataRoom.id && f.folder_id === (currentFolderId || "root"))
+    .filter((f) => f.data_room_id === dataRoom.id && f.folder_id === (folderId || "root"))
     .map((f) => ({
       id: f.id,
       name: f.name,
@@ -147,10 +68,11 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
       createdAt: new Date(f.created_at).getTime(),
     }))
 
-  const folderPath = getFolderPath(currentFolderId)
+  const folderPath = getFolderPath(folderId)
 
   const handleCreate = async () => {
     const trimmedName = newFolderName.trim()
+    debugger
 
     if (!trimmedName) {
       setError("Folder name cannot be empty")
@@ -163,7 +85,7 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
       return
     }
 
-    await createFolder(trimmedName, currentFolderId)
+    await createFolder(trimmedName, folderId)
     setNewFolderName("")
     setIsCreateOpen(false)
     setError("")
@@ -203,41 +125,16 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
       <div className="flex items-center gap-4">
         <GlobalSearch
           dataRoomId={dataRoom.id}
-          folderId={currentFolderId}
+          folderId={folderId}
           placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
         />
       </div>
 
       {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => selectFolder(null)} className="flex items-center gap-1.5 cursor-pointer">
-                <Home className="h-4 w-4" />
-                Root
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {folderPath.map((folder, index) => (
-              <div key={folder.id} className="flex items-center">
-                <BreadcrumbSeparator>
-                  <ChevronRight className="h-4 w-4" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  {index === folderPath.length - 1 ? (
-                    <BreadcrumbPage>{folder.name}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink onClick={() => selectFolder(folder)} className="cursor-pointer">
-                      {folder.name}
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </div>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
+        <Breadcrumbs dataRoom={dataRoom} />
         <div className="flex items-center gap-2">
-          <FileUploader currentFolderId={currentFolderId || "root"} />
+          <FileUploader currentFolderId={folderId || "root"} dataRoom={dataRoom} />
           <Button onClick={() => setIsCreateOpen(true)}>
             <FolderPlus className="h-4 w-4 mr-2" />
             New Folder
@@ -247,22 +144,11 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
 
       {/* Content Area */}
       {isEmpty ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <FolderOpen className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">This folder is empty</h3>
-            <p className="text-sm text-muted-foreground mb-4">Create a folder or upload files to get started</p>
-            <div className="flex gap-2">
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <FolderPlus className="h-4 w-4 mr-2" />
-                New Folder
-              </Button>
-              <FileUploader currentFolderId={currentFolderId || "root"} variant="button" />
-            </div>
-          </CardContent>
-        </Card>
+        <FolderEmpty
+          currentFolderId={folderId}
+          setIsCreateOpen={setIsCreateOpen}
+          dataRoom={dataRoom}
+        />
       ) : (
         <div className="space-y-6">
           {/* Folders */}
@@ -271,63 +157,14 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
               <h2 className="text-sm font-semibold text-muted-foreground mb-3">Folders</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {childFolders.map((folder) => (
-                  <Card
+                  <FolderCard
+                    folder={folder}
+                    dataRoom={dataRoom}
                     key={folder.id}
-                    className="hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => selectFolder(folder)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Folder className="h-5 w-5 text-primary flex-shrink-0" />
-                          <span className="font-medium truncate">{folder.name}</span>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <ShareDialog itemType="folder" itemId={folder.id} itemName={folder.name}>
-                              <DropdownMenuItem
-                                onSelect={(e) => {
-                                  e.preventDefault()
-                                }}
-                              >
-                                <Share2 className="h-4 w-4 mr-2" />
-                                Share
-                              </DropdownMenuItem>
-                            </ShareDialog>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingFolder(folder.id)
-                                setEditName(folder.name)
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteId(folder.id)
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    setEditingFolder={setEditingFolder}
+                    setEditName={setEditName}
+                    setDeleteId={setDeleteId}
+                  />
                 ))}
               </div>
             </div>
@@ -414,24 +251,11 @@ export function FolderView({dataRoom}: {dataRoom: DataRoom}) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this folder and all its contents including nested folders and files. This
-              action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeletion
+        open={!!deleteId}
+        onOpenChange={(open: boolean) => !open && setDeleteId(null)}
+        handleDelete={handleDelete}
+      />
 
       {viewingFileId && <PDFViewer fileId={viewingFileId} onClose={() => setViewingFileId(null)} />}
     </div>
