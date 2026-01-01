@@ -22,14 +22,16 @@ const Header = ({user}: {user: User}) => {
     <div className="border-b bg-card">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <Link href="/">
-          <h1 className="text-xl font-semibold">Data Room</h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+          <h1 className="text-xl font-semibold">Data Room's <small className="text-sm">({user.email})</small></h1>
+          <p className="text-sm text-muted-foreground">Manage folders and documents</p>
         </Link>
-        <GlobalSearch/>
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="h-4 w-4 mr-2"/>
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <GlobalSearch/>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2"/>
+            Logout
+          </Button>
+        </div>
       </div>
     </div>
   )

@@ -18,7 +18,7 @@ import { FileUploader } from "@/components/file-uploader"
 import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { GlobalSearch } from "@/components/global-search"
-import type { DataRoom} from "@/types"
+import type { DataRoom } from "@/types"
 import Breadcrumbs from "@/components/breadcrumbs";
 import FolderEmpty from "@/components/folder-empty";
 import FolderCard from "@/components/folder-card";
@@ -106,18 +106,15 @@ export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <GlobalSearch
-          dataRoomId={dataRoom.id}
-          folderId={folderId}
-          placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
-        />
-      </div>
-
       {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
         <Breadcrumbs dataRoom={dataRoom} folders={folders} folderId={folderId} />
         <div className="flex items-center gap-2">
+          <GlobalSearch
+            dataRoomId={dataRoom.id}
+            folderId={folderId}
+            placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
+          />
           <FileUploader currentFolderId={folderId || "root"} dataRoom={dataRoom} />
           <Button onClick={() => setIsCreateOpen(true)}>
             <FolderPlus className="h-4 w-4 mr-2" />

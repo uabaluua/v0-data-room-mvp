@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import {useMemo} from "react";
 import {redirect} from "next/navigation";
-import {ChevronRight, Home} from "lucide-react";
+import {ChevronRight, Home, FolderRoot, Folder as FolderIcon} from "lucide-react";
 import {DataRoom, Folder} from "@/types";
 
 const getFolderPath = (folderId: string | null, folders: Folder[]): Folder[] => {
@@ -35,17 +35,29 @@ export default function Breadcrumbs({dataRoom, folders, folderId}: {dataRoom: Da
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink onClick={() => redirect(`/data-room/${dataRoom.id}`)} className="flex items-center gap-1.5 cursor-pointer">
+          <BreadcrumbLink onClick={() => redirect(`/`)} className="flex items-center gap-1.5 cursor-pointer">
             <Home className="h-4 w-4" />
-            Root
+            Home
           </BreadcrumbLink>
         </BreadcrumbItem>
+        <div className="flex items-center">
+          <BreadcrumbSeparator>
+            <ChevronRight className="h-4 w-4" />
+          </BreadcrumbSeparator>
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => redirect(`/data-room/${dataRoom.id}`)} className="flex items-center gap-1.5 cursor-pointer">
+              <FolderRoot className="h-4 w-4" />
+              {dataRoom.name}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </div>
         {folderPath.map((folder, index) => (
           <div key={folder.id} className="flex items-center">
             <BreadcrumbSeparator>
               <ChevronRight className="h-4 w-4" />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
+              <FolderIcon className="h-4 w-4" />
               {index === folderPath.length - 1 ? (
                 <BreadcrumbPage>{folder.name}</BreadcrumbPage>
               ) : (

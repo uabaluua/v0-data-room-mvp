@@ -106,10 +106,14 @@ export function GlobalSearch({
 
   return (
     <>
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder={placeholder} className="pl-9" onFocus={() => setIsOpen(true)} readOnly />
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="gap-2"
+      >
+        <Search className="h-4 w-4" />
+      </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl">
