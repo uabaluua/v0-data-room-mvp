@@ -1,14 +1,14 @@
-import {ReactNode} from "react"
-import Header from '@/components/header'
-import {AppSidebar} from '@/components/side-nav'
-import {getCurrentUser} from "@/lib/supabase/server"
-import {redirect} from "next/navigation"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { ReactNode } from "react";
+import Header from "@/components/header";
+import { AppSidebar } from "@/components/side-nav";
+import { getCurrentUser } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
-const Layout = async ({children}: { children: ReactNode }) => {
-  const user = await getCurrentUser()
+const Layout = async ({ children }: { children: ReactNode }) => {
+  const user = await getCurrentUser();
   if (!user) {
-    redirect("/login")
+    redirect("/login");
   }
 
   return (
@@ -23,7 +23,7 @@ const Layout = async ({children}: { children: ReactNode }) => {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
-}
+  );
+};
 
-export default Layout
+export default Layout;

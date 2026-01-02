@@ -1,11 +1,13 @@
-import {DataRoomView} from '@/components/data-room-view';
+import { DataRoomView } from "@/components/data-room-view";
 
-const DataRoom = async ({params}: { params: Promise<{roomId: string}> }) => {
-  const { roomId } = await params
+const DataRoom = async ({
+  params,
+}: {
+  params: Promise<{ roomId: string }>;
+}) => {
+  const { roomId } = await params;
 
-  return (
-    <DataRoomView roomId={roomId} folderId={null} />
-  )
-}
+  return <DataRoomView roomId={roomId} folderId={null} />;
+};
 
-export default DataRoom
+export default DataRoom;

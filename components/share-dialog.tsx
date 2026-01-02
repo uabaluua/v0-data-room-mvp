@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { Share2, LinkIcon, Mail, Copy, X, Eye, EditIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { Share2, LinkIcon, Mail, Copy, X, Eye, EditIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,79 +12,99 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ShareDialogProps {
-  itemType: "data_room" | "folder" | "file"
-  itemId: string
-  itemName: string
-  children?: React.ReactNode
+  itemType: "data_room" | "folder" | "file";
+  itemId: string;
+  itemName: string;
+  children?: React.ReactNode;
 }
 
 interface Share {
-  id: string
-  shared_with: string | null
-  shared_with_profile: { id: string; email: string } | null
-  permission: "view" | "edit"
-  share_token: string | null
-  created_at: string
+  id: string;
+  shared_with: string | null;
+  shared_with_profile: { id: string; email: string } | null;
+  permission: "view" | "edit";
+  share_token: string | null;
+  created_at: string;
 }
 
-export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [email, setEmail] = useState("")
-  const [permission, setPermission] = useState<"view" | "edit">("view")
-  const [shares, setShares] = useState<Share[]>([])
-  const [shareLink, setShareLink] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    if (isOpen) {
-      loadShares()
-    }
-  }, [isOpen, itemId])
+export function ShareDialog({
+  itemType,
+  itemId,
+  itemName,
+  children,
+}: ShareDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [permission, setPermission] = useState<"view" | "edit">("view");
+  const [shares, setShares] = useState<Share[]>([]);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const loadShares = async () => {
-    const supabase = createClient()
+    const supabase = createClient();
 
-    const columnName = itemType === "data_room" ? "data_room_id" : itemType === "folder" ? "folder_id" : "file_id"
+    const columnName =
+      itemType === "data_room"
+        ? "data_room_id"
+        : itemType === "folder"
+          ? "folder_id"
+          : "file_id";
 
     const { data, error } = await supabase
-        .from("shares")
-        .select(`
+      .from("shares")
+      .select(
+        `
           *,
           shared_by_profile:profiles!shares_shared_by_fkey (id, email),
           shared_with_profile:profiles!shares_shared_with_fkey (id, email)
-        `)
-        .eq(columnName, itemId)
+        `,
+      )
+      .eq(columnName, itemId);
 
     if (error) {
-      console.error("Error loading shares:", error)
-      return
+      console.error("Error loading shares:", error);
+      return;
     }
 
     if (data) {
       const formattedShares = data.map((share: any) => ({
         ...share,
-      }))
+      }));
 
-      setShares(formattedShares)
+      setShares(formattedShares);
 
       // Find existing share link
-      const linkShare = formattedShares.find((s: Share) => s.share_token)
+      const linkShare = formattedShares.find((s: Share) => s.share_token);
       if (linkShare) {
-        setShareLink(`${window.location.origin}/shared/${linkShare.share_token}`)
+        setShareLink(
+          `${window.location.origin}/shared/${linkShare.share_token}`,
+        );
       }
     }
-  }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadShares();
+    }
+  }, [isOpen, itemId]);
 
   const handleEmailShare = async () => {
     if (!email.trim()) {
@@ -92,34 +112,36 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
         title: "Error",
         description: "Please enter an email address",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
-    const supabase = createClient()
+    setIsLoading(true);
+    const supabase = createClient();
 
     // Find user by email
-    const { data: profileData, error: profileError } = await supabase
-        .rpc("get_profile_by_email", { p_email: email.trim() })
+    const { data: profileData, error: profileError } = await supabase.rpc(
+      "get_profile_by_email",
+      { p_email: email.trim() },
+    );
 
     if (profileError || !profileData?.id) {
       toast({
         title: "Error",
         description: "User not found with this email address",
         variant: "destructive",
-      })
-      setIsLoading(false)
-      return
+      });
+      setIsLoading(false);
+      return;
     }
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      setIsLoading(false)
-      return
+      setIsLoading(false);
+      return;
     }
 
     // Create share
@@ -127,113 +149,113 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
       shared_by: user.id,
       shared_with: profileData.id,
       permission,
-    }
+    };
 
-    if (itemType === "data_room") shareData.data_room_id = itemId
-    else if (itemType === "folder") shareData.folder_id = itemId
-    else shareData.file_id = itemId
+    if (itemType === "data_room") shareData.data_room_id = itemId;
+    else if (itemType === "folder") shareData.folder_id = itemId;
+    else shareData.file_id = itemId;
 
-    const { error } = await supabase.from("shares").insert(shareData)
+    const { error } = await supabase.from("shares").insert(shareData);
 
     if (error) {
       toast({
         title: "Error",
         description: "Failed to share. User may already have access.",
         variant: "destructive",
-      })
+      });
     } else {
       toast({
         title: "Success",
         description: `Shared with ${email}`,
-      })
-      setEmail("")
-      await loadShares()
+      });
+      setEmail("");
+      await loadShares();
     }
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   const handleGenerateLink = async () => {
     if (shareLink) {
       // Copy existing link
-      navigator.clipboard.writeText(shareLink)
+      navigator.clipboard.writeText(shareLink);
       toast({
         title: "Copied",
         description: "Share link copied to clipboard",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
-    const supabase = createClient()
+    setIsLoading(true);
+    const supabase = createClient();
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      setIsLoading(false)
-      return
+      setIsLoading(false);
+      return;
     }
 
     // Generate unique token
-    const token = crypto.randomUUID()
+    const token = crypto.randomUUID();
 
     const shareData: any = {
       shared_by: user.id,
       share_token: token,
       permission,
-    }
+    };
 
-    if (itemType === "data_room") shareData.data_room_id = itemId
-    else if (itemType === "folder") shareData.folder_id = itemId
-    else shareData.file_id = itemId
+    if (itemType === "data_room") shareData.data_room_id = itemId;
+    else if (itemType === "folder") shareData.folder_id = itemId;
+    else shareData.file_id = itemId;
 
-    const { error } = await supabase.from("shares").insert(shareData)
+    const { error } = await supabase.from("shares").insert(shareData);
 
     if (error) {
       toast({
         title: "Error",
         description: "Failed to generate share link",
         variant: "destructive",
-      })
+      });
     } else {
-      const link = `${window.location.origin}/shared/${token}`
-      setShareLink(link)
-      navigator.clipboard.writeText(link)
+      const link = `${window.location.origin}/shared/${token}`;
+      setShareLink(link);
+      navigator.clipboard.writeText(link);
       toast({
         title: "Success",
         description: "Share link created and copied to clipboard",
-      })
-      await loadShares()
+      });
+      await loadShares();
     }
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   const handleRemoveShare = async (shareId: string) => {
-    const supabase = createClient()
-    const { error } = await supabase.from("shares").delete().eq("id", shareId)
+    const supabase = createClient();
+    const { error } = await supabase.from("shares").delete().eq("id", shareId);
 
     if (error) {
       toast({
         title: "Error",
         description: "Failed to remove share",
         variant: "destructive",
-      })
+      });
     } else {
       toast({
         title: "Success",
         description: "Share removed",
-      })
+      });
 
       // If removing link share, clear the link
-      const removedShare = shares.find((s) => s.id === shareId)
+      const removedShare = shares.find((s) => s.id === shareId);
       if (removedShare?.share_token) {
-        setShareLink(null)
+        setShareLink(null);
       }
 
-      await loadShares()
+      await loadShares();
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -248,7 +270,10 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Share {itemName}</DialogTitle>
-          <DialogDescription>Share this {itemType.replace("_", " ")} with others via email or link</DialogDescription>
+          <DialogDescription>
+            Share this {itemType.replace("_", " ")} with others via email or
+            link
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="email" className="mt-4">
@@ -257,7 +282,7 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
               <Mail className="h-4 w-4 mr-2" />
               Email
             </TabsTrigger>
-            <TabsTrigger value="link">
+            <TabsTrigger value="link" disabled={itemType !== "file"}>
               <LinkIcon className="h-4 w-4 mr-2" />
               Link
             </TabsTrigger>
@@ -275,14 +300,19 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      handleEmailShare()
+                      handleEmailShare();
                     }
                   }}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="permission">Permission</Label>
-                <Select value={permission} onValueChange={(value: "view" | "edit") => setPermission(value)}>
+                <Select
+                  value={permission}
+                  onValueChange={(value: "view" | "edit") =>
+                    setPermission(value)
+                  }
+                >
                   <SelectTrigger id="permission">
                     <SelectValue />
                   </SelectTrigger>
@@ -302,7 +332,11 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleEmailShare} disabled={isLoading} className="w-full">
+              <Button
+                onClick={handleEmailShare}
+                disabled={isLoading}
+                className="w-full"
+              >
                 Share
               </Button>
             </div>
@@ -314,10 +348,21 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                   {shares
                     .filter((s) => s.shared_with)
                     .map((share) => (
-                      <div key={share.id} className="flex items-center justify-between p-2 rounded-lg border">
+                      <div
+                        key={share.id}
+                        className="flex items-center justify-between p-2 rounded-lg border"
+                      >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-sm truncate">{share.shared_with_profile?.email}</span>
-                          <Badge variant={share.permission === "edit" ? "default" : "secondary"}>
+                          <span className="text-sm truncate">
+                            {share.shared_with_profile?.email}
+                          </span>
+                          <Badge
+                            variant={
+                              share.permission === "edit"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
                             {share.permission}
                           </Badge>
                         </div>
@@ -340,7 +385,12 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="link-permission">Permission</Label>
-                <Select value={permission} onValueChange={(value: "view" | "edit") => setPermission(value)}>
+                <Select
+                  value={permission}
+                  onValueChange={(value: "view" | "edit") =>
+                    setPermission(value)
+                  }
+                >
                   <SelectTrigger id="link-permission">
                     <SelectValue />
                   </SelectTrigger>
@@ -361,7 +411,11 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                 </Select>
               </div>
 
-              <Button onClick={handleGenerateLink} disabled={isLoading} className="w-full">
+              <Button
+                onClick={handleGenerateLink}
+                disabled={isLoading}
+                className="w-full"
+              >
                 <LinkIcon className="h-4 w-4 mr-2" />
                 {shareLink ? "Copy Link" : "Generate Link"}
               </Button>
@@ -375,15 +429,19 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText(shareLink)
-                        toast({ title: "Copied", description: "Link copied to clipboard" })
+                        navigator.clipboard.writeText(shareLink);
+                        toast({
+                          title: "Copied",
+                          description: "Link copied to clipboard",
+                        });
                       }}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Anyone with this link can access this {itemType.replace("_", " ")}
+                    Anyone with this link can access this{" "}
+                    {itemType.replace("_", " ")}
                   </p>
                 </div>
               )}
@@ -393,8 +451,8 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                   variant="destructive"
                   size="sm"
                   onClick={() => {
-                    const linkShare = shares.find((s) => s.share_token)
-                    if (linkShare) handleRemoveShare(linkShare.id)
+                    const linkShare = shares.find((s) => s.share_token);
+                    if (linkShare) handleRemoveShare(linkShare.id);
                   }}
                 >
                   Remove Link
@@ -405,5 +463,5 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
         </Tabs>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
