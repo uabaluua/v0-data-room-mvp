@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useDataRoom } from "@/lib/data-room-context"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { useRouter } from "next/navigation"
-import type { DataRoom, Folder as FolderType, File as FileType } from "@/lib/data-room-context"
+import type { DataRoom, Folder as FolderType, File as FileType } from "@/types"
 
 interface SharedItem {
   id: string
@@ -104,8 +104,8 @@ export function SharedWithMe() {
     if (item.type === "data_room") {
       const dataRoom = item.item as DataRoom
       // Use the item directly if not in dataRooms yet
-      selectDataRoom(dataRoom)
-      router.push(`/?dataRoom=${dataRoom.id}`)
+      // selectDataRoom(dataRoom)
+      router.push(`/data-room/${dataRoom.id}`)
     } else if (item.type === "folder") {
       const folder = item.item as FolderType
       // Load the data room if needed
@@ -118,8 +118,8 @@ export function SharedWithMe() {
       
       if (dataRoomData) {
         selectDataRoom(dataRoomData)
-        selectFolder(folder)
-        router.push(`/?dataRoom=${folder.data_room_id}&folder=${folder.id}`)
+        selectFolder(folder.id)
+        router.push(`/data_room/${folder.data_room_id}/folder/${folder.id}`)
       }
     } else if (item.type === "file") {
       const file = item.item as FileType
@@ -168,13 +168,6 @@ export function SharedWithMe() {
       }
 
       setViewingFileId(fileData.id)
-      
-      // Update URL - include data room if we have it, otherwise just the file
-      // if (file.data_room_id) {
-      //   router.push(`/?dataRoom=${file.data_room_id}${file.folder_id ? `&folder=${file.folder_id}` : ''}&file=${file.id}`)
-      // } else {
-      //   router.push(`/?file=${file.id}`)
-      // }
     }
   }
 

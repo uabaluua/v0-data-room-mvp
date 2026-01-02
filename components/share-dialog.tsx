@@ -293,7 +293,7 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                         View only
                       </div>
                     </SelectItem>
-                    <SelectItem value="edit">
+                    <SelectItem value="edit" disabled={true}>
                       <div className="flex items-center gap-2">
                         <EditIcon className="h-4 w-4" />
                         Can edit
@@ -351,7 +351,7 @@ export function ShareDialog({ itemType, itemId, itemName, children }: ShareDialo
                         View only
                       </div>
                     </SelectItem>
-                    <SelectItem value="edit">
+                    <SelectItem value="edit" disabled={true}>
                       <div className="flex items-center gap-2">
                         <EditIcon className="h-4 w-4" />
                         Can edit
