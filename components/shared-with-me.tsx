@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useDataRoom } from "@/lib/data-room-context"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { useRouter } from "next/navigation"
-import type { DataRoom, Folder as FolderType, File as FileType } from "@/lib/data-room-context"
+import type { DataRoom, Folder as FolderType, File as FileType } from "@/types"
 
 interface SharedItem {
   id: string
@@ -104,8 +104,8 @@ export function SharedWithMe() {
     if (item.type === "data_room") {
       const dataRoom = item.item as DataRoom
       // Use the item directly if not in dataRooms yet
-      selectDataRoom(dataRoom)
-      router.push(`/?dataRoom=${dataRoom.id}`)
+      // selectDataRoom(dataRoom)
+      router.push(`/data-room/${dataRoom.id}`)
     } else if (item.type === "folder") {
       const folder = item.item as FolderType
       // Load the data room if needed
@@ -117,9 +117,7 @@ export function SharedWithMe() {
         .single()
       
       if (dataRoomData) {
-        selectDataRoom(dataRoomData)
-        selectFolder(folder)
-        router.push(`/?dataRoom=${folder.data_room_id}&folder=${folder.id}`)
+        router.push(`/data_room/${folder.data_room_id}/folder/${folder.id}`)
       }
     } else if (item.type === "file") {
       const file = item.item as FileType
@@ -168,13 +166,6 @@ export function SharedWithMe() {
       }
 
       setViewingFileId(fileData.id)
-      
-      // Update URL - include data room if we have it, otherwise just the file
-      // if (file.data_room_id) {
-      //   router.push(`/?dataRoom=${file.data_room_id}${file.folder_id ? `&folder=${file.folder_id}` : ''}&file=${file.id}`)
-      // } else {
-      //   router.push(`/?file=${file.id}`)
-      // }
     }
   }
 
@@ -225,44 +216,100 @@ export function SharedWithMe() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {sharedItems.map((sharedItem) => (
-            <Card
-              key={sharedItem.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => handleOpenItem(sharedItem)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {getItemIcon(sharedItem.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <UserPlus className="h-3 w-3" />
-                          Shared by {sharedItem.shared_by_email}
-                        </p>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(sharedItem.created_at).toLocaleDateString()}
-                        </p>
+          {sharedItems.map((sharedItem) => {
+            if (sharedItem.type === "folder") {
+              return (
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" key={sharedItem.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {getItemIcon(sharedItem.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <UserPlus className="h-3 w-3" />
+                              Shared by {sharedItem.shared_by_email}
+                            </p>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(sharedItem.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
+                          {sharedItem.permission}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenItem(sharedItem)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Open
+                        </Button>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )
+            }
+            
+            // For other types, use normal card with separate buttons
+            return (
+              <Card
+                key={sharedItem.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleOpenItem(sharedItem)}
+                    >
+                      {getItemIcon(sharedItem.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <UserPlus className="h-3 w-3" />
+                            Shared by {sharedItem.shared_by_email}
+                          </p>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(sharedItem.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
+                        {sharedItem.permission}
+                      </Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenItem(sharedItem)
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Open
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
-                      {sharedItem.permission}
-                    </Badge>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Open
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
       

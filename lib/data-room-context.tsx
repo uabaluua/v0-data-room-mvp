@@ -18,6 +18,8 @@ interface DataRoomContextType {
   deleteDataRoom: (id: string) => Promise<void>
   selectDataRoom: (id: string | null) => DataRoom | null
 
+  selectLoadedDataRoom: (dataRoom: DataRoom | null) => void
+
   // Folder operations
   createFolder: (name: string, parentFolderId: string | null) => Promise<void>
   renameFolder: (id: string, newName: string) => Promise<void>
@@ -65,6 +67,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
         .from("data_rooms")
         .select("*")
         .order("created_at", { ascending: false })
+        .eq('owner_id', user.id)
 
       if (dataRoomsData) {
         setDataRooms(dataRoomsData)
@@ -98,6 +101,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
 
       return setFolders(data ?? [])
     }
+
     loadFolders(currentDataRoom?.id)
   }, [currentDataRoom]);
 
@@ -209,6 +213,12 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
 
   const selectDataRoom = useCallback((id: string | null) => {
     const dataRoom = dataRooms.find((dr) => dr.id === id)
+    setCurrentDataRoom(dataRoom || null)
+    setCurrentFolder(null)
+    return dataRoom || null
+  }, [dataRooms])
+
+  const selectLoadedDataRoom = useCallback((dataRoom: DataRoom | null) => {
     setCurrentDataRoom(dataRoom || null)
     setCurrentFolder(null)
     return dataRoom || null
@@ -361,6 +371,7 @@ export function DataRoomProvider({ children }: { children: React.ReactNode }) {
         renameDataRoom,
         deleteDataRoom,
         selectDataRoom,
+        selectLoadedDataRoom,
         createFolder,
         renameFolder,
         deleteFolder,
