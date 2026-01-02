@@ -1,16 +1,12 @@
-import { Share } from "@/types";
+import { Share, File } from "@/types";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useDataRoom } from "@/lib/data-room-context";
-import { DataRoomView } from "@/components/data-room-view";
-import { FolderView } from "@/components/folder-view";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2, ZoomIn, ZoomOut, Download } from "lucide-react";
 
 export default function SharedContent({ share }: { share: Share }) {
-  const { currentDataRoom, selectDataRoom, selectFolder } = useDataRoom();
-  const [viewingFile, setViewingFile] = useState<any | null>(null);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
   const [loadingContent, setLoadingContent] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
@@ -22,68 +18,20 @@ export default function SharedContent({ share }: { share: Share }) {
       const supabase = createClient();
 
       try {
-        if (share.data_room_id) {
-          const { data, error } = await supabase
-            .from("data_rooms")
-            .select("*")
-            .eq("id", share.data_room_id)
-            .single();
-
-          if (error) {
-            console.error("Error loading shared data room:", error);
-            setLoadError(`Failed to load data room: ${error.message}`);
-            setLoadingContent(false);
-            return;
-          }
-
-          if (data) {
-            selectDataRoom(data);
-            setLoadingContent(false);
-          } else {
-            setLoadError("Data room not found");
-            setLoadingContent(false);
-          }
-        } else if (share.folder_id) {
-          const { data: folderData, error: folderError } = await supabase
-            .from("folders")
-            .select("*, data_rooms(*)")
-            .eq("id", share.folder_id)
-            .single();
-
-          if (folderError) {
-            setLoadError(`Failed to load folder: ${folderError.message}`);
-            setLoadingContent(false);
-            return;
-          }
-
-          if (folderData) {
-            if (folderData.data_rooms) {
-              selectDataRoom(folderData.data_rooms);
-            }
-            selectFolder(folderData);
-            setLoadingContent(false);
-          } else {
-            setLoadError("Folder not found");
-            setLoadingContent(false);
-          }
-        } else if (share.file_id) {
+        if (share.file_id) {
           const { data: fileData, error: fileError } = await supabase
             .from("files")
             .select("*")
             .eq("id", share.file_id)
             .single();
 
-          console.log("File query result:", { fileData, fileError });
-
           if (fileError) {
-            console.error("Error loading shared file:", fileError);
             setLoadError(`Failed to load file: ${fileError.message}`);
             setLoadingContent(false);
             return;
           }
 
           if (fileData) {
-            console.log("Setting file:", fileData);
             setViewingFile(fileData);
             setLoadingContent(false);
           } else {
@@ -92,7 +40,6 @@ export default function SharedContent({ share }: { share: Share }) {
           }
         }
       } catch (err) {
-        console.error("Unexpected error loading shared content:", err);
         setLoadError(
           `An unexpected error occurred: ${err instanceof Error ? err.message : String(err)}`,
         );
@@ -101,7 +48,7 @@ export default function SharedContent({ share }: { share: Share }) {
     }
 
     loadSharedContent();
-  }, [share, selectDataRoom, selectFolder]);
+  }, [share]);
 
   if (loadingContent) {
     return (
@@ -209,58 +156,6 @@ export default function SharedContent({ share }: { share: Share }) {
             />
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (share.folder_id) {
-    if (!currentDataRoom) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading folder...</p>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="container mx-auto py-8">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold mb-2">Shared Folder</h1>
-          <p className="text-sm text-muted-foreground">
-            {share.permission === "edit"
-              ? "You can view and edit this folder"
-              : "You can view this folder"}
-          </p>
-        </div>
-        <FolderView />
-      </div>
-    );
-  }
-
-  if (share.data_room_id) {
-    if (!currentDataRoom) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading data room...</p>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="container mx-auto py-8">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold mb-2">Shared Data Room</h1>
-          <p className="text-sm text-muted-foreground">
-            {share.permission === "edit"
-              ? "You can view and edit this data room"
-              : "You can view this data room"}
-          </p>
-        </div>
-        <DataRoomView />
       </div>
     );
   }

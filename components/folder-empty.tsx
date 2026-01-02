@@ -4,12 +4,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/file-uploader";
+import { DataRoom } from "@/types";
 
 export default function FolderEmpty({
   currentFolderId,
-  setIsCreateOpen,
+  createNewFolder,
   dataRoom,
-}: any) {
+}: {
+  currentFolderId: string | null;
+  createNewFolder: () => void;
+  dataRoom: DataRoom;
+}) {
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-16">
@@ -21,7 +26,7 @@ export default function FolderEmpty({
           Create a folder or upload files to get started
         </p>
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>
+          <Button onClick={() => createNewFolder()}>
             <FolderPlus className="h-4 w-4 mr-2" />
             New Folder
           </Button>

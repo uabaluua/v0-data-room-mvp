@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { FolderPlus } from "lucide-react";
 import { useDataRoom } from "@/lib/data-room-context";
 import { Button } from "@/components/ui/button";
@@ -53,16 +53,12 @@ export function FolderView({
   const childFolders = folders.filter(
     (f) => f.data_room_id === dataRoom.id && f.parent_id === folderId,
   );
-  const currentFiles = useMemo(
-    () =>
-      files.map((f) => ({
-        id: f.id,
-        name: f.name,
-        size: f.size,
-        createdAt: new Date(f.created_at).getTime(),
-      })),
-    [files],
-  );
+  const currentFiles = files.map((f) => ({
+    id: f.id,
+    name: f.name,
+    size: f.size,
+    createdAt: new Date(f.created_at).getTime(),
+  }));
 
   const handleCreate = async () => {
     const trimmedName = newFolderName.trim();
@@ -158,7 +154,7 @@ export function FolderView({
       {isEmpty ? (
         <FolderEmpty
           currentFolderId={folderId}
-          setIsCreateOpen={setIsCreateOpen}
+          createNewFolder={() => setIsCreateOpen(true)}
           dataRoom={dataRoom}
         />
       ) : (

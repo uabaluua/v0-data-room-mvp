@@ -35,7 +35,7 @@ export function DataRoomView({
       const found = selectDataRoom(roomId);
 
       // If not found, load it from the database (for shared data rooms)
-      if (!found && !loadedDataRoom && roomId !== loadedDataRoom?.id) {
+      if (!found && roomId !== loadedDataRoom?.id) {
         setIsLoading(true);
         const supabase = createClient();
         supabase
