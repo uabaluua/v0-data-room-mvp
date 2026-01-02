@@ -117,8 +117,6 @@ export function SharedWithMe() {
         .single()
       
       if (dataRoomData) {
-        selectDataRoom(dataRoomData)
-        selectFolder(folder.id)
         router.push(`/data_room/${folder.data_room_id}/folder/${folder.id}`)
       }
     } else if (item.type === "file") {
@@ -218,44 +216,100 @@ export function SharedWithMe() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {sharedItems.map((sharedItem) => (
-            <Card
-              key={sharedItem.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => handleOpenItem(sharedItem)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {getItemIcon(sharedItem.type)}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <UserPlus className="h-3 w-3" />
-                          Shared by {sharedItem.shared_by_email}
-                        </p>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(sharedItem.created_at).toLocaleDateString()}
-                        </p>
+          {sharedItems.map((sharedItem) => {
+            if (sharedItem.type === "folder") {
+              return (
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {getItemIcon(sharedItem.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <UserPlus className="h-3 w-3" />
+                              Shared by {sharedItem.shared_by_email}
+                            </p>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(sharedItem.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
+                          {sharedItem.permission}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenItem(sharedItem)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Open
+                        </Button>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )
+            }
+            
+            // For other types, use normal card with separate buttons
+            return (
+              <Card
+                key={sharedItem.id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div 
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleOpenItem(sharedItem)}
+                    >
+                      {getItemIcon(sharedItem.type)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{getItemName(sharedItem.item)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <UserPlus className="h-3 w-3" />
+                            Shared by {sharedItem.shared_by_email}
+                          </p>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(sharedItem.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
+                        {sharedItem.permission}
+                      </Badge>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenItem(sharedItem)
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Open
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={sharedItem.permission === "edit" ? "default" : "secondary"}>
-                      {sharedItem.permission}
-                    </Badge>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Open
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
       
