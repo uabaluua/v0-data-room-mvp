@@ -33,7 +33,7 @@ export default function Breadcrumbs({dataRoom, folders, folderId}: {dataRoom: Da
   const folderPath = useMemo(() => getFolderPath(folderId, folders), [folders]);
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="flex-wrap">
         <BreadcrumbItem>
           <BreadcrumbLink onClick={() => redirect(`/`)} className="flex items-center gap-1.5 cursor-pointer">
             <Home className="h-4 w-4" />

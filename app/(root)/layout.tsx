@@ -1,8 +1,9 @@
 import {ReactNode} from "react"
 import Header from '@/components/header'
-import { SideNav } from '@/components/side-nav'
+import {AppSidebar} from '@/components/side-nav'
 import {getCurrentUser} from "@/lib/supabase/server"
 import {redirect} from "next/navigation"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 const Layout = async ({children}: { children: ReactNode }) => {
   const user = await getCurrentUser()
@@ -11,19 +12,17 @@ const Layout = async ({children}: { children: ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header user={user} />
-      <div className="container mx-auto items-center flex">
-        <div className="flex pt-16">
-          <SideNav />
-          <main className="flex-1 overflow-auto md:ml-64">
-            <div className="container mx-auto px-4 py-6 md:py-8">
-              {children}
-            </div>
-          </main>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <Header user={user} />
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="min-h-[100vh] flex-1 rounded-xl md:p-8">
+            {children}
+          </div>
         </div>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 

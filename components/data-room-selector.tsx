@@ -88,53 +88,6 @@ export function DataRoomSelector() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Rooms</h1>
-          <p className="text-muted-foreground mt-1">Secure document repositories for due diligence</p>
-        </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg">
-              <Plus className="h-4 w-4 mr-2"/>
-              Create Data Room
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Data Room</DialogTitle>
-              <DialogDescription>Enter a name for your new data room</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Data Room Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Q1 2024 Due Diligence"
-                  value={newRoomName}
-                  onChange={(e) => {
-                    setNewRoomName(e.target.value)
-                    setError("")
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleCreate()
-                    }
-                  }}
-                />
-                {error && <p className="text-sm text-destructive">{error}</p>}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate}>Create</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {dataRooms.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -225,6 +178,41 @@ export function DataRoomSelector() {
           ))}
         </div>
       )}
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Data Room</DialogTitle>
+            <DialogDescription>Enter a name for your new data room</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Data Room Name</Label>
+              <Input
+                id="name"
+                placeholder="Q1 2024 Due Diligence"
+                value={newRoomName}
+                onChange={(e) => {
+                  setNewRoomName(e.target.value)
+                  setError("")
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleCreate()
+                  }
+                }}
+              />
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingRoom} onOpenChange={(open) => !open && setEditingRoom(null)}>
         <DialogContent onClick={(e) => e.stopPropagation()}>

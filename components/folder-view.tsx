@@ -107,18 +107,23 @@ export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: 
   return (
     <div className="space-y-6">
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center justify-between">
-        <Breadcrumbs dataRoom={dataRoom} folders={folders} folderId={folderId} />
-        <div className="flex items-center gap-2">
-          <GlobalSearch
-            dataRoomId={dataRoom.id}
-            folderId={folderId}
-            placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
-          />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <Breadcrumbs dataRoom={dataRoom} folders={folders} folderId={folderId} />
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          <div className="[&_button]:w-auto">
+            <GlobalSearch
+              dataRoomId={dataRoom.id}
+              folderId={folderId}
+              placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
+            />
+          </div>
           <FileUploader currentFolderId={folderId || "root"} dataRoom={dataRoom} />
           <Button onClick={() => setIsCreateOpen(true)}>
             <FolderPlus className="h-4 w-4 mr-2" />
-            New Folder
+            <span className="hidden sm:inline">New Folder</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
       </div>
