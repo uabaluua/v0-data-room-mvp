@@ -5,7 +5,7 @@ import {
   Edit,
   Folder as FolderIcon,
   MoreVertical,
-  Share2,
+  // Share2,
   Trash2,
 } from "lucide-react";
 import {
@@ -15,8 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ShareDialog } from "@/components/share-dialog";
+// import { ShareDialog } from "@/components/share-dialog";
 import { redirect } from "next/navigation";
+import { DataRoom, Folder } from "@/types";
 
 export default function FolderCard({
   dataRoom,
@@ -24,7 +25,13 @@ export default function FolderCard({
   setEditingFolder,
   setEditName,
   setDeleteId,
-}: any) {
+}: {
+  dataRoom: DataRoom;
+  folder: Folder;
+  setEditingFolder: (id: string) => void;
+  setEditName: (name: string) => void;
+  setDeleteId: (id: string) => void;
+}) {
   return (
     <Card
       className="hover:shadow-md transition-shadow cursor-pointer group"
@@ -52,20 +59,20 @@ export default function FolderCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <ShareDialog
-                itemType="folder"
-                itemId={folder.id}
-                itemName={folder.name}
-              >
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                  }}
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </DropdownMenuItem>
-              </ShareDialog>
+              {/*<ShareDialog*/}
+              {/*  itemType="folder"*/}
+              {/*  itemId={folder.id}*/}
+              {/*  itemName={folder.name}*/}
+              {/*>*/}
+              {/*  <DropdownMenuItem*/}
+              {/*    onSelect={(e) => {*/}
+              {/*      e.preventDefault();*/}
+              {/*    }}*/}
+              {/*  >*/}
+              {/*    <Share2 className="h-4 w-4 mr-2" />*/}
+              {/*    Share*/}
+              {/*  </DropdownMenuItem>*/}
+              {/*</ShareDialog>*/}
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();

@@ -35,77 +35,76 @@ export function SharedWithMe() {
   const router = useRouter();
 
   useEffect(() => {
-    loadSharedItems();
-  }, []);
+    async function loadSharedItems() {
+      setIsLoading(true);
+      const supabase = createClient();
 
-  const loadSharedItems = async () => {
-    setIsLoading(true);
-    const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (!user) return;
-
-    // Get all shares for this user
-    // Note: files(*) will include all fields including the data field
-    const { data: shares, error } = await supabase
-      .from("shares")
-      .select(
-        `
+      // Get all shares for this user
+      // Note: files(*) will include all fields including the data field
+      const { data: shares, error } = await supabase
+        .from("shares")
+        .select(
+          `
         *,
         profiles!shares_shared_by_fkey(email),
         data_rooms(*),
         folders(*),
         files(*)
       `,
-      )
-      .eq("shared_with", user.id)
-      .order("created_at", { ascending: false });
+        )
+        .eq("shared_with", user.id)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error loading shared items:", error);
-      setIsLoading(false);
-      return;
-    }
-
-    const items: SharedItem[] = [];
-
-    for (const share of shares || []) {
-      if (share.data_rooms) {
-        items.push({
-          id: share.id,
-          type: "data_room",
-          item: share.data_rooms,
-          permission: share.permission,
-          shared_by_email: share.profiles?.email || "Unknown",
-          created_at: share.created_at,
-        });
-      } else if (share.folders) {
-        items.push({
-          id: share.id,
-          type: "folder",
-          item: share.folders,
-          permission: share.permission,
-          shared_by_email: share.profiles?.email || "Unknown",
-          created_at: share.created_at,
-        });
-      } else if (share.files) {
-        items.push({
-          id: share.id,
-          type: "file",
-          item: share.files,
-          permission: share.permission,
-          shared_by_email: share.profiles?.email || "Unknown",
-          created_at: share.created_at,
-        });
+      if (error) {
+        console.error("Error loading shared items:", error);
+        setIsLoading(false);
+        return;
       }
-    }
 
-    setSharedItems(items);
-    setIsLoading(false);
-  };
+      const items: SharedItem[] = [];
+
+      for (const share of shares || []) {
+        if (share.data_rooms) {
+          items.push({
+            id: share.id,
+            type: "data_room",
+            item: share.data_rooms,
+            permission: share.permission,
+            shared_by_email: share.profiles?.email || "Unknown",
+            created_at: share.created_at,
+          });
+        } else if (share.folders) {
+          items.push({
+            id: share.id,
+            type: "folder",
+            item: share.folders,
+            permission: share.permission,
+            shared_by_email: share.profiles?.email || "Unknown",
+            created_at: share.created_at,
+          });
+        } else if (share.files) {
+          items.push({
+            id: share.id,
+            type: "file",
+            item: share.files,
+            permission: share.permission,
+            shared_by_email: share.profiles?.email || "Unknown",
+            created_at: share.created_at,
+          });
+        }
+      }
+
+      setSharedItems(items);
+      setIsLoading(false);
+    }
+    loadSharedItems();
+  }, []);
 
   const handleOpenItem = async (item: SharedItem) => {
     if (item.type === "data_room") {

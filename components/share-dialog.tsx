@@ -84,7 +84,7 @@ export function ShareDialog({
     }
 
     if (data) {
-      const formattedShares = data.map((share: any) => ({
+      const formattedShares = data.map((share: Share) => ({
         ...share,
       }));
 

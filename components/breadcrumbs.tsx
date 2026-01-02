@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useMemo } from "react";
 import { redirect } from "next/navigation";
 import {
   ChevronRight,
@@ -46,7 +45,7 @@ export default function Breadcrumbs({
   folders: Folder[];
   folderId: string | null;
 }) {
-  const folderPath = useMemo(() => getFolderPath(folderId, folders), [folders]);
+  const folderPath = getFolderPath(folderId, folders);
   return (
     <Breadcrumb>
       <BreadcrumbList className="flex-wrap">
