@@ -16,7 +16,7 @@ function NavContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const isShared = pathname === "/shared"
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Primary Navigation */}
       <div className="p-4 space-y-1">
         <Link
@@ -57,7 +57,7 @@ export function SideNav() {
   return (
     <>
       {/* Desktop Side Nav */}
-      <nav className="hidden md:flex w-64 border-r bg-card h-screen fixed left-0 top-16">
+      <nav className="hidden md:flex w-64 border-r bg-card h-screen">
         <NavContent />
       </nav>
     </>

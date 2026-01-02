@@ -25,7 +25,7 @@ const Header = ({user}: {user: User}) => {
 
   return (
     <div className="border-b bg-card fixed top-0 left-0 right-0 z-40">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <MobileNavTrigger />
           <Link href="/" className="flex-shrink-0">
