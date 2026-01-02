@@ -1,13 +1,30 @@
-"use client"
+"use client";
 
-import {Card, CardContent} from "@/components/ui/card";
-import {Edit, Folder as FolderIcon, MoreVertical, Share2, Trash2} from "lucide-react";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {ShareDialog} from "@/components/share-dialog";
-import {redirect} from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Edit,
+  Folder as FolderIcon,
+  MoreVertical,
+  Share2,
+  Trash2,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ShareDialog } from "@/components/share-dialog";
+import { redirect } from "next/navigation";
 
-export default function FolderCard({dataRoom, folder, setEditingFolder, setEditName, setDeleteId}: any) {
+export default function FolderCard({
+  dataRoom,
+  folder,
+  setEditingFolder,
+  setEditName,
+  setDeleteId,
+}: any) {
   return (
     <Card
       className="hover:shadow-md transition-shadow cursor-pointer group"
@@ -16,7 +33,9 @@ export default function FolderCard({dataRoom, folder, setEditingFolder, setEditN
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div
-            onClick={() => redirect(`/data-room/${dataRoom.id}/folder/${folder.id}`)}
+            onClick={() =>
+              redirect(`/data-room/${dataRoom.id}/folder/${folder.id}`)
+            }
             className="flex items-center gap-3 flex-1 min-w-0"
           >
             <FolderIcon className="h-5 w-5 text-primary flex-shrink-0" />
@@ -33,10 +52,14 @@ export default function FolderCard({dataRoom, folder, setEditingFolder, setEditN
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <ShareDialog itemType="folder" itemId={folder.id} itemName={folder.name}>
+              <ShareDialog
+                itemType="folder"
+                itemId={folder.id}
+                itemName={folder.name}
+              >
                 <DropdownMenuItem
                   onSelect={(e) => {
-                    e.preventDefault()
+                    e.preventDefault();
                   }}
                 >
                   <Share2 className="h-4 w-4 mr-2" />
@@ -45,9 +68,9 @@ export default function FolderCard({dataRoom, folder, setEditingFolder, setEditN
               </ShareDialog>
               <DropdownMenuItem
                 onClick={(e) => {
-                  e.stopPropagation()
-                  setEditingFolder(folder.id)
-                  setEditName(folder.name)
+                  e.stopPropagation();
+                  setEditingFolder(folder.id);
+                  setEditName(folder.name);
                 }}
               >
                 <Edit className="h-4 w-4 mr-2" />
@@ -55,8 +78,8 @@ export default function FolderCard({dataRoom, folder, setEditingFolder, setEditN
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
-                  e.stopPropagation()
-                  setDeleteId(folder.id)
+                  e.stopPropagation();
+                  setDeleteId(folder.id);
                 }}
                 className="text-destructive"
               >
@@ -68,5 +91,5 @@ export default function FolderCard({dataRoom, folder, setEditingFolder, setEditN
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

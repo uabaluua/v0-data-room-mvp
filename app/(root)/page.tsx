@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useDataRoom } from "@/lib/data-room-context"
-import { DataRoomSelector } from "@/components/data-room-selector"
+import { useDataRoom } from "@/lib/data-room-context";
+import { DataRoomSelector } from "@/components/data-room-selector";
 
 const Dashboard = () => {
-  const { isLoading } = useDataRoom()
+  const { isLoading } = useDataRoom();
 
   if (isLoading) {
     return (
@@ -14,14 +14,14 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <DataRoomSelector />
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;

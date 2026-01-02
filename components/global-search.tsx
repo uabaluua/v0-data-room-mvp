@@ -1,29 +1,34 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Search, FolderIcon, FileText, X } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
-import { useDataRoom } from "@/lib/data-room-context"
-import { cn } from "@/lib/utils"
+import { useState, useEffect } from "react";
+import { Search, FolderIcon, FileText, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { useDataRoom } from "@/lib/data-room-context";
+import { cn } from "@/lib/utils";
 
 interface SearchResult {
-  id: string
-  name: string
-  type: "folder" | "file"
-  data_room_id: string
-  folder_id: string | null
-  parent_id: string | null
-  owner_id: string
-  created_at: string
+  id: string;
+  name: string;
+  type: "folder" | "file";
+  data_room_id: string;
+  folder_id: string | null;
+  parent_id: string | null;
+  owner_id: string;
+  created_at: string;
 }
 
 interface GlobalSearchProps {
-  dataRoomId?: string | null
-  folderId?: string | null
-  placeholder?: string
+  dataRoomId?: string | null;
+  folderId?: string | null;
+  placeholder?: string;
 }
 
 export function GlobalSearch({
@@ -31,27 +36,27 @@ export function GlobalSearch({
   folderId = null,
   placeholder = "Search files and folders...",
 }: GlobalSearchProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const { selectDataRoom, selectFolder, dataRooms, folders } = useDataRoom()
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const { selectDataRoom, selectFolder, dataRooms } = useDataRoom();
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([])
-      return
+      setResults([]);
+      return;
     }
 
     const searchTimeout = setTimeout(async () => {
-      setIsSearching(true)
-      const supabase = createClient()
+      setIsSearching(true);
+      const supabase = createClient();
 
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return
+      if (!user) return;
 
       try {
         const { data, error } = await supabase.rpc("search_items", {
@@ -59,44 +64,44 @@ export function GlobalSearch({
           user_id: user.id,
           search_data_room_id: dataRoomId,
           search_folder_id: folderId,
-        })
+        });
 
         if (error) {
-          console.error("Search error:", error)
+          console.error("Search error:", error);
         } else if (data) {
-          setResults(data)
+          setResults(data);
         }
       } catch (error) {
-        console.error("Search failed:", error)
+        console.error("Search failed:", error);
       } finally {
-        setIsSearching(false)
+        setIsSearching(false);
       }
-    }, 300)
+    }, 300);
 
-    return () => clearTimeout(searchTimeout)
-  }, [query, dataRoomId, folderId])
+    return () => clearTimeout(searchTimeout);
+  }, [query, dataRoomId, folderId]);
 
   const handleSelectResult = (result: SearchResult) => {
-    const dataRoom = dataRooms.find((dr) => dr.id === result.data_room_id)
-    if (!dataRoom) return
+    const dataRoom = dataRooms.find((dr) => dr.id === result.data_room_id);
+    if (!dataRoom) return;
 
-    selectDataRoom(dataRoom.id)
+    selectDataRoom(dataRoom.id);
 
     if (result.type === "folder") {
-      selectFolder(result.id)
+      selectFolder(result.id);
     } else if (result.type === "file" && result.folder_id) {
-      selectFolder(result.folder_id)
+      selectFolder(result.folder_id);
     }
 
-    setIsOpen(false)
-    setQuery("")
-  }
+    setIsOpen(false);
+    setQuery("");
+  };
 
   const getScopeLabel = () => {
-    if (folderId) return "in this folder"
-    if (dataRoomId) return "in this data room"
-    return "everywhere"
-  }
+    if (folderId) return "in this folder";
+    if (dataRoomId) return "in this data room";
+    return "everywhere";
+  };
 
   return (
     <>
@@ -123,7 +128,7 @@ export function GlobalSearch({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Type to search..."
+                placeholder={placeholder}
                 className="pl-9 pr-9"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -172,14 +177,18 @@ export function GlobalSearch({
                   ))}
                 </div>
               ) : query.length >= 2 ? (
-                <div className="text-center py-8 text-muted-foreground">No results found for &quot;{query}&quot;</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  No results found for &quot;{query}&quot;
+                </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">Type at least 2 characters to search</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Type at least 2 characters to search
+                </div>
               )}
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
