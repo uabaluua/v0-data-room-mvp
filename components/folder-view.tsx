@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronRight, Folder, FolderPlus, MoreVertical, Edit, Trash2, FolderOpen, Home, Share2 } from "lucide-react"
+import {useState, useEffect, useMemo} from "react"
+import { FolderPlus } from "lucide-react"
 import { useDataRoom } from "@/lib/data-room-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -15,42 +14,24 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { FileUploader } from "@/components/file-uploader"
 import { FileList } from "@/components/file-list"
 import { PDFViewer } from "@/components/pdf-viewer"
 import { GlobalSearch } from "@/components/global-search"
-import { ShareDialog } from "@/components/share-dialog"
+import type { DataRoom } from "@/types"
+import Breadcrumbs from "@/components/breadcrumbs";
+import FolderEmpty from "@/components/folder-empty";
+import FolderCard from "@/components/folder-card";
+import ConfirmDeletion from "@/components/confirm-deletion";
 
-export function FolderView() {
+export function FolderView({dataRoom, folderId}: {dataRoom: DataRoom, folderId: string | null}) {
   const {
-    currentDataRoom,
     currentFolder,
     folders,
     files,
     createFolder,
     renameFolder,
     deleteFolder,
-    selectFolder,
-    getFolderPath,
   } = useDataRoom()
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -61,23 +42,18 @@ export function FolderView() {
   const [error, setError] = useState("")
   const [viewingFileId, setViewingFileId] = useState<string | null>(null)
 
-  if (!currentDataRoom) return null
+  if (!dataRoom) return null
 
-  // Get current folder contents
-  const currentFolderId = currentFolder?.id || null
   const childFolders = folders.filter(
-    (f) => f.data_room_id === currentDataRoom.id && f.parent_id === currentFolderId,
+    (f) => f.data_room_id === dataRoom.id && f.parent_id === folderId,
   )
-  const currentFiles = files
-    .filter((f) => f.data_room_id === currentDataRoom.id && f.folder_id === (currentFolderId || "root"))
+  const currentFiles = useMemo(() => files
     .map((f) => ({
       id: f.id,
       name: f.name,
       size: f.size,
       createdAt: new Date(f.created_at).getTime(),
-    }))
-
-  const folderPath = getFolderPath(currentFolderId)
+    })), [files]);
 
   const handleCreate = async () => {
     const trimmedName = newFolderName.trim()
@@ -93,7 +69,7 @@ export function FolderView() {
       return
     }
 
-    await createFolder(trimmedName, currentFolderId)
+    await createFolder(trimmedName, folderId)
     setNewFolderName("")
     setIsCreateOpen(false)
     setError("")
@@ -130,69 +106,35 @@ export function FolderView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <GlobalSearch
-          dataRoomId={currentDataRoom.id}
-          folderId={currentFolderId}
-          placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
-        />
-      </div>
-
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center justify-between">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => selectFolder(null)} className="flex items-center gap-1.5 cursor-pointer">
-                <Home className="h-4 w-4" />
-                Root
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            {folderPath.map((folder, index) => (
-              <div key={folder.id} className="flex items-center">
-                <BreadcrumbSeparator>
-                  <ChevronRight className="h-4 w-4" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  {index === folderPath.length - 1 ? (
-                    <BreadcrumbPage>{folder.name}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink onClick={() => selectFolder(folder)} className="cursor-pointer">
-                      {folder.name}
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </div>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-        <div className="flex items-center gap-2">
-          <FileUploader currentFolderId={currentFolderId || "root"} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <Breadcrumbs dataRoom={dataRoom} folders={folders} folderId={folderId} />
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          <div className="[&_button]:w-auto">
+            <GlobalSearch
+              dataRoomId={dataRoom.id}
+              folderId={folderId}
+              placeholder={`Search in ${currentFolder?.name || "this data room"}...`}
+            />
+          </div>
+          <FileUploader currentFolderId={folderId || "root"} dataRoom={dataRoom} />
           <Button onClick={() => setIsCreateOpen(true)}>
             <FolderPlus className="h-4 w-4 mr-2" />
-            New Folder
+            <span className="hidden sm:inline">New Folder</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
       </div>
 
       {/* Content Area */}
       {isEmpty ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <FolderOpen className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">This folder is empty</h3>
-            <p className="text-sm text-muted-foreground mb-4">Create a folder or upload files to get started</p>
-            <div className="flex gap-2">
-              <Button onClick={() => setIsCreateOpen(true)}>
-                <FolderPlus className="h-4 w-4 mr-2" />
-                New Folder
-              </Button>
-              <FileUploader currentFolderId={currentFolderId || "root"} variant="button" />
-            </div>
-          </CardContent>
-        </Card>
+        <FolderEmpty
+          currentFolderId={folderId}
+          setIsCreateOpen={setIsCreateOpen}
+          dataRoom={dataRoom}
+        />
       ) : (
         <div className="space-y-6">
           {/* Folders */}
@@ -201,63 +143,14 @@ export function FolderView() {
               <h2 className="text-sm font-semibold text-muted-foreground mb-3">Folders</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {childFolders.map((folder) => (
-                  <Card
+                  <FolderCard
+                    folder={folder}
+                    dataRoom={dataRoom}
                     key={folder.id}
-                    className="hover:shadow-md transition-shadow cursor-pointer group"
-                    onClick={() => selectFolder(folder)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Folder className="h-5 w-5 text-primary flex-shrink-0" />
-                          <span className="font-medium truncate">{folder.name}</span>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <ShareDialog itemType="folder" itemId={folder.id} itemName={folder.name}>
-                              <DropdownMenuItem
-                                onSelect={(e) => {
-                                  e.preventDefault()
-                                }}
-                              >
-                                <Share2 className="h-4 w-4 mr-2" />
-                                Share
-                              </DropdownMenuItem>
-                            </ShareDialog>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setEditingFolder(folder.id)
-                                setEditName(folder.name)
-                              }}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteId(folder.id)
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    setEditingFolder={setEditingFolder}
+                    setEditName={setEditName}
+                    setDeleteId={setDeleteId}
+                  />
                 ))}
               </div>
             </div>
@@ -344,24 +237,11 @@ export function FolderView() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this folder and all its contents including nested folders and files. This
-              action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeletion
+        open={!!deleteId}
+        onOpenChange={(open: boolean) => !open && setDeleteId(null)}
+        handleDelete={handleDelete}
+      />
 
       {viewingFileId && <PDFViewer fileId={viewingFileId} onClose={() => setViewingFileId(null)} />}
     </div>

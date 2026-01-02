@@ -14,12 +14,6 @@ export async function updateSession(request: NextRequest) {
   // The app will still work but without automatic token refresh
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("[v0] Supabase environment variables not found in middleware - skipping auth refresh")
-    // Redirect to login if trying to access protected routes
-    if (request.nextUrl.pathname.startsWith("/protected")) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/auth/login"
-      return NextResponse.redirect(url)
-    }
     return supabaseResponse
   }
 
@@ -50,14 +44,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
-    request.nextUrl.pathname.startsWith("/protected") &&
-    !user
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Define public routes that don't require authentication
+  const publicRoutes = ["/login", "/sign-up", "/sign-up-success", "/error"]
+  const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith("/shared/"))
+
+  // Only redirect to login if user is not authenticated and trying to access a protected route
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = "/auth/login"
+    url.pathname = "/login"
     return NextResponse.redirect(url)
   }
 
