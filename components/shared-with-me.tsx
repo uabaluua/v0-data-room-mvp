@@ -219,7 +219,7 @@ export function SharedWithMe() {
           {sharedItems.map((sharedItem) => {
             if (sharedItem.type === "folder") {
               return (
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer" key={sharedItem.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
