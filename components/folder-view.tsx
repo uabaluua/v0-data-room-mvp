@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FolderPlus } from "lucide-react";
 import { useDataRoom } from "@/lib/data-room-context";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileUploader } from "@/components/file-uploader";
 import { FileList } from "@/components/file-list";
 import { PDFViewer } from "@/components/pdf-viewer";
@@ -47,19 +54,55 @@ export function FolderView({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [viewingFileId, setViewingFileId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>("name-asc");
 
   if (!dataRoom) return null;
 
   const childFolders = folders.filter(
     (f) => f.data_room_id === dataRoom.id && f.parent_id === folderId,
   );
-  const currentFiles = files.map((f) => ({
-    id: f.id,
-    name: f.name,
-    size: f.size,
-    createdAt: new Date(f.created_at).getTime(),
-    updatedAt: new Date(f.updated_at).getTime(),
-  }));
+
+  const currentFiles = useMemo(() => {
+    const allFiles = files.map((f) => ({
+      id: f.id,
+      name: f.name,
+      size: f.size,
+      createdAt: new Date(f.created_at).getTime(),
+      updatedAt: new Date(f.updated_at).getTime(),
+    }));
+    
+    const sorted = [...allFiles];
+    
+    switch (sortBy) {
+      case "size-asc":
+        sorted.sort((a, b) => a.size - b.size);
+        break;
+      case "size-desc":
+        sorted.sort((a, b) => b.size - a.size);
+        break;
+      case "created-asc":
+        sorted.sort((a, b) => a.createdAt - b.createdAt);
+        break;
+      case "created-desc":
+        sorted.sort((a, b) => b.createdAt - a.createdAt);
+        break;
+      case "updated-asc":
+        sorted.sort((a, b) => a.updatedAt - b.updatedAt);
+        break;
+      case "updated-desc":
+        sorted.sort((a, b) => b.updatedAt - a.updatedAt);
+        break;
+      case "name-asc":
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+    }
+    
+    return sorted;
+  }, [files, sortBy]);
 
   const handleCreate = async () => {
     const trimmedName = newFolderName.trim();
@@ -184,9 +227,26 @@ export function FolderView({
           {/* Files */}
           {currentFiles.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3">
-                Files
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-muted-foreground">
+                  Files
+                </h2>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                    <SelectItem value="size-asc">Size (Smallest)</SelectItem>
+                    <SelectItem value="size-desc">Size (Largest)</SelectItem>
+                    <SelectItem value="created-desc">Created (Newest)</SelectItem>
+                    <SelectItem value="created-asc">Created (Oldest)</SelectItem>
+                    <SelectItem value="updated-desc">Updated (Newest)</SelectItem>
+                    <SelectItem value="updated-asc">Updated (Oldest)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <FileList
                 currentFiles={currentFiles}
                 onViewFile={setViewingFileId}
