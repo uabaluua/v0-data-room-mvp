@@ -58,6 +58,7 @@ export function FolderView({
     name: f.name,
     size: f.size,
     createdAt: new Date(f.created_at).getTime(),
+    updatedAt: new Date(f.updated_at).getTime(),
   }));
 
   const handleCreate = async () => {
