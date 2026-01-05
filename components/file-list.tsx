@@ -39,6 +39,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ShareDialog } from "@/components/share-dialog";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 interface FileListProps {
   currentFiles: Array<{
@@ -46,6 +51,7 @@ interface FileListProps {
     name: string;
     size: number;
     createdAt: number;
+    updatedAt: number;
   }>;
   onViewFile: (fileId: string) => void;
 }
@@ -105,6 +111,21 @@ export function FileList({ currentFiles, onViewFile }: FileListProps) {
     return `${Math.round(bytes / Math.pow(k, i))} ${sizes[i]}`;
   };
 
+  const formatFileName = (
+    name: string,
+  ): { name: string; extension: string } => {
+    const lastDotIndex = name.lastIndexOf(".");
+
+    if (lastDotIndex <= 0) {
+      return { name, extension: "" };
+    }
+
+    return {
+      name: name.slice(0, lastDotIndex),
+      extension: name.slice(lastDotIndex + 1),
+    };
+  };
+
   return (
     <>
       <div className="space-y-2">
@@ -118,10 +139,28 @@ export function FileList({ currentFiles, onViewFile }: FileListProps) {
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{file.name}</p>
+                    <p className="font-medium truncate">
+                      {formatFileName(file.name).name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)} •{" "}
-                      {new Date(file.createdAt).toLocaleDateString()}
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {new Date(file.createdAt).toLocaleDateString()}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Uploaded</p>
+                        </TooltipContent>
+                      </Tooltip>{" "}
+                      • {formatFileSize(file.size)} •{" "}
+                      {formatFileName(file.name).extension} •{" "}
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {new Date(file.updatedAt).toLocaleDateString()}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Last Updated</p>
+                        </TooltipContent>
+                      </Tooltip>{" "}
                     </p>
                   </div>
                 </div>
