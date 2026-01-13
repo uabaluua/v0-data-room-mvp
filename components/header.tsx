@@ -5,7 +5,7 @@ import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { User } from "@supabase/auth-js/src/lib/types";
+import type { User } from "@supabase/supabase-js";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
